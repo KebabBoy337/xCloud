@@ -504,6 +504,14 @@ class xCloudStorage {
         }
 
         console.log('Starting upload for file:', file.name);
+        console.log('File size:', file.size, 'bytes');
+
+        // Проверяем размер файла (500MB = 500 * 1024 * 1024 bytes)
+        const maxSize = 500 * 1024 * 1024; // 500MB
+        if (file.size > maxSize) {
+            this.showToast('File too large. Maximum size: 500MB', 'error');
+            return;
+        }
 
         const formData = new FormData();
         formData.append('file', file);
