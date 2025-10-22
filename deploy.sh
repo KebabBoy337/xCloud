@@ -97,6 +97,7 @@ tee /etc/nginx/sites-available/xcloud > /dev/null <<EOF
 server {
     listen 80;
     server_name cloud.l0.mom;
+    client_max_body_size 500M;
     
     location / {
         proxy_pass http://localhost:3000;
