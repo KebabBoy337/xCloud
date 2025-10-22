@@ -44,8 +44,14 @@ cd /opt/xcloud
 echo "📋 Копирование файлов..."
 cp -r /root/xCloud/* /opt/xcloud/ 2>/dev/null || echo "Файлы уже скопированы"
 
+# Исправление прав доступа
+echo "🔧 Исправление прав доступа..."
+sudo chown -R xcloud:xcloud /opt/xcloud
+sudo chmod -R 755 /opt/xcloud
+
 # Установка зависимостей
 echo "📦 Установка зависимостей..."
+cd /opt/xcloud
 sudo -u xcloud npm install --production
 
 # Создание prod.env
