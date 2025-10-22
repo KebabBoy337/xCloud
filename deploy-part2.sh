@@ -18,29 +18,14 @@ sudo -u xcloud pm2 list
 echo "📦 Установка Certbot..."
 sudo apt install -y certbot python3-certbot-nginx
 
-# Настройка Nginx с HTTPS
-echo "⚙️ Настройка Nginx с HTTPS..."
+# Настройка Nginx (сначала только HTTP)
+echo "⚙️ Настройка Nginx..."
 sudo tee /etc/nginx/sites-available/xcloud > /dev/null <<EOF
-# HTTP to HTTPS redirect
+# HTTP server (will be updated by certbot)
 server {
     listen 80;
     server_name cloud.l0.mom _;
-    return 301 https://cloud.l0.mom\$request_uri;
-}
-
-# HTTPS configuration
-server {
-    listen 443 ssl http2;
-    server_name cloud.l0.mom _;
     
-    # SSL configuration (will be updated by certbot)
-    # ssl_certificate and ssl_certificate_key will be added by certbot
-    
-    # Security headers
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header X-Frame-Options DENY;
-    add_header X-Content-Type-Options nosniff;
-    add_header Referrer-Policy "strict-origin-when-cross-origin";
     
     # Максимальный размер загружаемого файла
     client_max_body_size 100M;
@@ -61,7 +46,7 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
         
         # Таймауты для больших файлов

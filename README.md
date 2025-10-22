@@ -134,7 +134,22 @@ Logs are available in the following locations:
 
 ## 🔄 Updates
 
-To update the application:
+### Automatic Update
+
+To update the application from GitHub:
+
+```bash
+# Run the update script (from project directory)
+sudo bash update.sh
+```
+
+This script will:
+- Pull latest changes from GitHub
+- Install new dependencies
+- Restart all services
+- Check service status
+
+### Manual Update
 
 ```bash
 cd /opt/xcloud
