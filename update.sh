@@ -79,11 +79,10 @@ LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse origin/main)
 
 if [ "$LOCAL" = "$REMOTE" ]; then
-    print_status "Уже последняя версия. Обновлений нет."
-    exit 0
+    print_status "Git уже последняя версия, но принудительно обновляем файлы..."
+else
+    print_status "Найдены обновления. Начинаем обновление..."
 fi
-
-print_status "Найдены обновления. Начинаем обновление..."
 
 # Остановка сервисов
 print_step "4. Остановка сервисов..."
@@ -93,10 +92,36 @@ systemctl stop xcloud 2>/dev/null || print_warning "Сервис xcloud уже �
 print_step "5. Обновление кода с GitHub..."
 git reset --hard origin/main
 
-# Копирование файлов в продакшн директорию
-print_step "6. Копирование файлов в /opt/xcloud..."
+# Очистка и копирование файлов в продакшн директорию
+print_step "6. Очистка и копирование файлов в /opt/xcloud..."
+
+# Сохраняем важные файлы
+if [ -f "/opt/xcloud/prod.env" ]; then
+    cp /opt/xcloud/prod.env /tmp/prod.env.backup
+    print_status "Сохранен prod.env"
+fi
+
+# Очищаем директорию (кроме node_modules и storage)
+print_status "Очистка /opt/xcloud..."
+find /opt/xcloud -maxdepth 1 -type f -name "*.js" -delete
+find /opt/xcloud -maxdepth 1 -type f -name "*.json" -delete
+find /opt/xcloud -maxdepth 1 -type f -name "*.md" -delete
+find /opt/xcloud -maxdepth 1 -type f -name "*.sh" -delete
+find /opt/xcloud -maxdepth 1 -type f -name "*.env" -delete
+rm -rf /opt/xcloud/public
+rm -rf /opt/xcloud/storage
+
+# Копируем новые файлы
 cp -r "$SOURCE_DIR"/* /opt/xcloud/
-print_status "Файлы скопированы в /opt/xcloud"
+
+# Восстанавливаем важные файлы
+if [ -f "/tmp/prod.env.backup" ]; then
+    cp /tmp/prod.env.backup /opt/xcloud/prod.env
+    rm /tmp/prod.env.backup
+    print_status "Восстановлен prod.env"
+fi
+
+print_status "Файлы обновлены в /opt/xcloud"
 
 # Восстановление prod.env если он был удален
 print_step "7. Проверка конфигурации..."
