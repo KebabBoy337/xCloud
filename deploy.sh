@@ -80,14 +80,14 @@ sudo tee /etc/nginx/sites-available/xcloud > /dev/null <<EOF
 # HTTP to HTTPS redirect
 server {
     listen 80;
-    server_name 151.243.208.2 _;
-    return 301 https://151.243.208.2\$request_uri;
+    server_name cloud.l0.mom _;
+    return 301 https://cloud.l0.mom\$request_uri;
 }
 
 # HTTPS configuration
 server {
     listen 443 ssl http2;
-    server_name 151.243.208.2 _;
+    server_name cloud.l0.mom _;
     
     # SSL configuration (will be updated by certbot)
     ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
@@ -172,29 +172,10 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
-# Остановка и очистка проблемного сервиса
-echo "🔧 Исправление проблемного сервиса..."
-sudo systemctl stop xcloud 2>/dev/null || true
-sudo systemctl reset-failed xcloud 2>/dev/null || true
-
 # Активация сервиса
 sudo systemctl daemon-reload
 sudo systemctl enable xcloud
 sudo systemctl start xcloud
-
-# Проверка статуса
-echo "📊 Проверка статуса сервиса..."
-sudo systemctl status xcloud --no-pager
-
-# Если сервис не запустился, исправляем
-if ! sudo systemctl is-active --quiet xcloud; then
-    echo "⚠️  Сервис не запустился, исправляем..."
-    sudo systemctl reset-failed xcloud
-    sudo -u xcloud pm2 kill 2>/dev/null || true
-    sudo systemctl restart xcloud
-    sleep 5
-    sudo systemctl status xcloud --no-pager
-fi
 
 # Создание скрипта для управления
 echo "📝 Создание скрипта управления..."
@@ -216,16 +197,8 @@ case "\$1" in
     logs)
         sudo journalctl -u xcloud -f
         ;;
-    fix)
-        echo "🔧 Исправление сервиса..."
-        sudo systemctl stop xcloud
-        sudo systemctl reset-failed xcloud
-        sudo -u xcloud pm2 kill
-        sudo systemctl start xcloud
-        echo "✅ Сервис исправлен"
-        ;;
     *)
-        echo "Использование: xcloud {start|stop|restart|status|logs|fix}"
+        echo "Использование: xcloud {start|stop|restart|status|logs}"
         exit 1
         ;;
 esac
@@ -237,28 +210,21 @@ sudo chmod +x /usr/local/bin/xcloud
 echo "📝 Создание скрипта SSL..."
 sudo tee /usr/local/bin/xcloud-ssl > /dev/null <<EOF
 #!/bin/bash
-echo "🔒 Настройка SSL сертификата для IP: 151.243.208.2"
+echo "🔒 Настройка SSL сертификата для домена: cloud.l0.mom"
 
-# Настройка SSL для IP адреса
-echo "🔧 Настройка SSL для IP: 151.243.208.2"
-sudo certbot --nginx -d 151.243.208.2 --non-interactive --agree-tos --email admin@151.243.208.2
+# Настройка SSL для домена
+echo "🔧 Настройка SSL для домена: cloud.l0.mom"
+sudo certbot --nginx -d cloud.l0.mom --non-interactive --agree-tos --email admin@cloud.l0.mom
 
 echo "✅ SSL сертификат настроен!"
-echo "🌐 Приложение доступно по адресу: https://151.243.208.2"
+echo "🌐 Приложение доступно по адресу: https://cloud.l0.mom"
 EOF
 
 sudo chmod +x /usr/local/bin/xcloud-ssl
 
-# Автоматическая настройка SSL для localhost (self-signed)
-echo "🔒 Настройка self-signed SSL для localhost..."
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout /etc/ssl/private/ssl-cert-snakeoil.key \
-    -out /etc/ssl/certs/ssl-cert-snakeoil.pem \
-    -subj "/C=US/ST=State/L=City/O=Organization/CN=151.243.208.2"
-
 # Автоматическая настройка SSL сертификата
-echo "🔒 Настройка SSL сертификата для 151.243.208.2..."
-sudo certbot --nginx -d 151.243.208.2 --non-interactive --agree-tos --email admin@151.243.208.2 || echo "⚠️  Certbot не смог настроить SSL, используем self-signed"
+echo "🔒 Настройка SSL сертификата для cloud.l0.mom..."
+sudo certbot --nginx -d cloud.l0.mom --non-interactive --agree-tos --email admin@cloud.l0.mom || echo "⚠️  Certbot не смог настроить SSL"
 
 echo ""
 echo "✅ Развертывание завершено!"
@@ -268,8 +234,8 @@ echo "   Main Key: main_key_2024_secure_12345"
 echo "   Upload Key: upload_key_2024_secure_67890"
 echo ""
 echo "🌐 Доступ к приложению:"
-echo "   https://151.243.208.2 (с SSL сертификатом)"
-echo "   http://151.243.208.2 (автоматически перенаправляется на HTTPS)"
+echo "   https://cloud.l0.mom (с SSL сертификатом)"
+echo "   http://cloud.l0.mom (автоматически перенаправляется на HTTPS)"
 echo ""
 echo "📋 Управление сервисом:"
 echo "   xcloud start    - запустить"
@@ -277,7 +243,6 @@ echo "   xcloud stop     - остановить"
 echo "   xcloud restart  - перезапустить"
 echo "   xcloud status   - статус"
 echo "   xcloud logs     - логи"
-echo "   xcloud fix      - исправить проблемный сервис"
 echo ""
 echo "🔒 Для настройки SSL сертификата (Let's Encrypt):"
 echo "   xcloud-ssl"
@@ -285,5 +250,3 @@ echo ""
 echo "📁 Файлы хранятся в: /opt/xcloud/storage"
 echo "📋 Логи в: /var/log/xcloud/"
 echo ""
-echo "⚠️  При первом заходе браузер покажет предупреждение о self-signed сертификате"
-echo "   Нажмите 'Дополнительно' -> 'Перейти на сайт' для продолжения"
