@@ -9,6 +9,9 @@ const config = require('./config');
 
 const app = express();
 
+// Trust proxy for rate limiting with Nginx
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -39,7 +42,11 @@ app.use((req, res, next) => {
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Trust proxy for accurate IP detection
+  trustProxy: true
 });
 app.use('/api/', limiter);
 
