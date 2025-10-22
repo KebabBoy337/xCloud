@@ -66,9 +66,20 @@ print_status "Остановка сервисов..."
 sudo systemctl stop xcloud 2>/dev/null || true
 sudo -u xcloud pm2 stop xcloud-storage 2>/dev/null || true
 
-# Обновление кода
+# Принудительное обновление кода (перезаписывает локальные изменения)
 print_status "Обновление кода с GitHub..."
-git pull origin main
+git reset --hard origin/main
+
+# Восстановление prod.env если он был удален
+print_status "Восстановление prod.env..."
+if [ ! -f "prod.env" ]; then
+    if [ -f "example.env" ]; then
+        cp example.env prod.env
+        print_status "prod.env восстановлен из example.env"
+    else
+        print_warning "example.env не найден, создайте prod.env вручную"
+    fi
+fi
 
 # Установка зависимостей
 print_status "Установка зависимостей..."
