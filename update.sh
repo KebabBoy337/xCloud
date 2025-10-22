@@ -123,18 +123,14 @@ fi
 
 print_status "Файлы обновлены в /opt/xcloud"
 
-# Восстановление prod.env если он был удален
+# Проверка конфигурации
 print_step "7. Проверка конфигурации..."
 cd /opt/xcloud
 if [ ! -f "prod.env" ]; then
-    if [ -f "example.env" ]; then
-        cp example.env prod.env
-        print_status "prod.env восстановлен из example.env"
-        print_warning "⚠️  ВАЖНО: Измените API ключи в prod.env!"
-    else
-        print_error "example.env не найден, создайте prod.env вручную"
-        exit 1
-    fi
+    print_error "prod.env не найден! Создайте его вручную из example.env"
+    print_status "cp example.env prod.env"
+    print_status "nano prod.env"
+    exit 1
 else
     print_status "prod.env найден, сохраняем существующие настройки"
 fi

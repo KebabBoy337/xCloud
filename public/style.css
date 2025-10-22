@@ -853,6 +853,7 @@ body {
     height: 100%;
     opacity: 0;
     cursor: pointer;
+    pointer-events: none; /* Отключаем события мыши для fileInput */
 }
 
 /* Progress Bar */

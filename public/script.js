@@ -109,8 +109,12 @@ class xCloudStorage {
         const fileInput = document.getElementById('fileInput');
 
         if (uploadArea && fileInput) {
-            uploadArea.addEventListener('click', () => {
-                fileInput.click();
+            // Только клик по uploadArea открывает проводник
+            uploadArea.addEventListener('click', (e) => {
+                // Проверяем, что клик не по самому fileInput
+                if (e.target !== fileInput) {
+                    fileInput.click();
+                }
             });
 
             fileInput.addEventListener('change', (e) => {
