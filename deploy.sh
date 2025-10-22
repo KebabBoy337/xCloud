@@ -41,6 +41,11 @@ sudo cp -r . /opt/xcloud/
 sudo chown -R xcloud:xcloud /opt/xcloud
 sudo chown -R xcloud:xcloud /var/log/xcloud
 
+# Создание prod.env из example.env
+echo "📝 Создание prod.env..."
+sudo cp /opt/xcloud/example.env /opt/xcloud/prod.env
+sudo chown xcloud:xcloud /opt/xcloud/prod.env
+
 # Установка зависимостей
 echo "📦 Установка зависимостей..."
 cd /opt/xcloud

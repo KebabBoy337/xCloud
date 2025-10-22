@@ -9,6 +9,7 @@ module.exports = {
     min_uptime: '10s',
     max_restarts: 10,
     restart_delay: 4000,
+    env_file: './prod.env',
     env: {
       NODE_ENV: 'production',
       PORT: 3000

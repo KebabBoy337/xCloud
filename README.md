@@ -56,22 +56,31 @@ After deployment, the application will be available at `http://your-server-ip`
 
 ## 🔧 Configuration
 
-Main settings in `config.js`:
+### Environment Variables
 
-```javascript
-module.exports = {
-  // API Keys
-  MAIN_API_KEY: 'your_main_key',
-  UPLOAD_API_KEY: 'your_upload_key',
-  
-  // Server
-  PORT: 3000,
-  
-  // Storage
-  STORAGE_PATH: './storage',
-  MAX_FILE_SIZE: '100MB'
-};
+Copy `example.env` to `prod.env` and configure your settings:
+
+```bash
+cp example.env prod.env
 ```
+
+Edit `prod.env`:
+
+```env
+# API Keys (CHANGE THESE!)
+MAIN_API_KEY=your_main_key_here
+UPLOAD_API_KEY=your_upload_key_here
+
+# Server Configuration
+PORT=3000
+NODE_ENV=production
+
+# Storage Configuration
+STORAGE_PATH=./storage
+MAX_FILE_SIZE=100MB
+```
+
+> ⚠️ **Important**: Change API keys before production deployment!
 
 ## 📁 Project Structure
 
@@ -82,6 +91,8 @@ xCloud/
 ├── package.json           # Dependencies
 ├── ecosystem.config.js    # PM2 configuration
 ├── deploy.sh              # Deployment script
+├── example.env            # Environment template
+├── prod.env               # Production environment (not in git)
 ├── public/                # Static files
 │   ├── index.html         # Main page
 │   ├── style.css          # Styles
