@@ -64,7 +64,6 @@ print_status "Найдены обновления. Начинаем обновл
 # Остановка сервисов
 print_status "Остановка сервисов..."
 sudo systemctl stop xcloud 2>/dev/null || true
-sudo -u xcloud pm2 stop xcloud-storage 2>/dev/null || true
 
 # Принудительное обновление кода (перезаписывает локальные изменения)
 print_status "Обновление кода с GitHub..."
@@ -108,13 +107,12 @@ else
     exit 1
 fi
 
-# Проверка PM2
-if sudo -u xcloud pm2 list | grep -q "xcloud-storage.*online"; then
-    print_status "✅ PM2 процесс запущен успешно"
+# Проверка systemd сервиса
+if sudo systemctl is-active --quiet xcloud; then
+    print_status "✅ Systemd сервис запущен успешно"
 else
-    print_warning "⚠️  PM2 процесс не найден или не запущен"
-    print_status "Попытка запуска PM2..."
-    sudo -u xcloud pm2 start ecosystem.config.js
+    print_error "❌ Systemd сервис не запустился"
+    print_status "Проверьте логи: sudo journalctl -u xcloud -f"
 fi
 
 # Проверка nginx
@@ -143,14 +141,12 @@ echo "========================="
 echo ""
 echo "📊 Статус сервисов:"
 echo "   systemctl status xcloud"
-echo "   pm2 list"
 echo ""
 echo "🌐 Приложение доступно по адресу:"
 echo "   https://cloud.l0.mom"
 echo ""
 echo "📋 Логи:"
 echo "   sudo journalctl -u xcloud -f"
-echo "   pm2 logs xcloud-storage"
 echo ""
 echo "🔄 Для следующего обновления просто запустите:"
 echo "   sudo bash update.sh"

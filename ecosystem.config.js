@@ -1,3 +1,5 @@
+// PM2 configuration (not used in systemd deployment)
+// This file is kept for compatibility but systemd runs Node.js directly
 module.exports = {
   apps: [{
     name: 'xcloud-storage',

@@ -32,14 +32,20 @@ npm run dev
 npm start
 ```
 
-### Ubuntu Deployment
+### Ubuntu Deployment (No PM2)
 
 ```bash
 # Run automatic deployment script
 sudo ./deploy.sh
 ```
 
-After deployment, the application will be available at `http://your-server-ip`
+After deployment, the application will be available at `https://cloud.l0.mom`
+
+**Key Features:**
+- **No PM2** - Direct Node.js execution via systemd
+- **Automatic SSL** - Let's Encrypt certificates via Certbot
+- **Environment-based config** - Uses `.env` files for configuration
+- **Systemd service** - Automatic startup and restart
 
 ## 🛠 API Endpoints
 

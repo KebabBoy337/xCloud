@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # xCloud Storage - Complete Cleanup Script
-# This script will remove all xCloud files, PM2 processes, and systemd services
+# This script will remove all xCloud files, systemd services, and configurations
 
 echo "🧹 xCloud Storage - Complete Cleanup"
 echo "======================================"
@@ -30,8 +30,8 @@ if [[ $EUID -eq 0 ]]; then
     print_warning "Running as root. This will remove system-wide installations."
 fi
 
-# Stop and remove PM2 processes
-print_status "Stopping PM2 processes..."
+# Stop and remove PM2 processes (if any)
+print_status "Stopping PM2 processes (if any)..."
 if command -v pm2 &> /dev/null; then
     pm2 stop xcloud-storage 2>/dev/null || true
     pm2 delete xcloud-storage 2>/dev/null || true
