@@ -121,6 +121,10 @@ if [ -f "/tmp/prod.env.backup" ]; then
     print_status "Восстановлен prod.env"
 fi
 
+# Сразу исправляем права доступа
+chown -R xcloud:xcloud /opt/xcloud
+chmod -R 755 /opt/xcloud
+
 print_status "Файлы обновлены в /opt/xcloud"
 
 # Проверка конфигурации
@@ -137,6 +141,10 @@ fi
 
 # Установка зависимостей
 print_step "8. Установка зависимостей..."
+# Сначала исправляем права на все файлы
+chown -R xcloud:xcloud /opt/xcloud
+chmod -R 755 /opt/xcloud
+# Затем устанавливаем зависимости от имени пользователя xcloud
 sudo -u xcloud npm install --production
 
 # Проверка конфигурации
@@ -145,10 +153,9 @@ if [ ! -f "config.js" ]; then
     exit 1
 fi
 
-# Проверка прав доступа
-print_step "9. Исправление прав доступа..."
-chown -R xcloud:xcloud /opt/xcloud
-chmod -R 755 /opt/xcloud
+# Права доступа уже исправлены на шаге 6
+print_step "9. Проверка прав доступа..."
+print_status "Права доступа уже исправлены"
 
 # Перезапуск сервисов
 print_step "10. Перезапуск сервисов..."
