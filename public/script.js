@@ -12,11 +12,34 @@ class xCloudStorage {
 
     checkAuthStatus() {
         const stored = localStorage.getItem('xcloud_api_key');
-        if (stored) {
+        if (stored && stored.trim() !== '') {
             this.apiKey = stored;
-            this.showMainContent();
-            this.loadFiles();
+            // Проверяем, что API ключ действительно работает
+            this.verifyApiKey(stored);
         } else {
+            this.showLoginScreen();
+        }
+    }
+
+    async verifyApiKey(apiKey) {
+        try {
+            const response = await fetch('/api/health', {
+                headers: {
+                    'X-API-Key': apiKey
+                }
+            });
+
+            if (response.ok) {
+                this.showMainContent();
+                this.loadFiles();
+            } else {
+                // API ключ не работает, очищаем localStorage
+                localStorage.removeItem('xcloud_api_key');
+                this.showLoginScreen();
+            }
+        } catch (error) {
+            // Ошибка сети, очищаем localStorage
+            localStorage.removeItem('xcloud_api_key');
             this.showLoginScreen();
         }
     }
@@ -170,14 +193,19 @@ class xCloudStorage {
             });
 
             if (response.ok) {
+                // Сохраняем API ключ только если он работает
                 localStorage.setItem('xcloud_api_key', this.apiKey);
                 this.showToast('Login successful', 'success');
                 this.showMainContent();
                 this.loadFiles();
             } else {
+                // Очищаем localStorage при неверном ключе
+                localStorage.removeItem('xcloud_api_key');
                 throw new Error('Invalid API key');
             }
         } catch (error) {
+            // Очищаем localStorage при ошибке
+            localStorage.removeItem('xcloud_api_key');
             this.showToast('Login error: ' + error.message, 'error');
         }
     }

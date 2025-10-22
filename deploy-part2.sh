@@ -34,8 +34,7 @@ server {
     server_name cloud.l0.mom _;
     
     # SSL configuration (will be updated by certbot)
-    ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
-    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+    # ssl_certificate and ssl_certificate_key will be added by certbot
     
     # Security headers
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
@@ -100,15 +99,14 @@ Description=xCloud Storage Service
 After=network.target
 
 [Service]
-Type=forking
+Type=simple
 User=xcloud
 Group=xcloud
 WorkingDirectory=/opt/xcloud
-ExecStart=/usr/bin/pm2 start ecosystem.config.js --no-daemon
-ExecReload=/usr/bin/pm2 reload ecosystem.config.js
-ExecStop=/usr/bin/pm2 stop ecosystem.config.js
+ExecStart=/usr/bin/pm2-runtime start ecosystem.config.js
 Restart=always
-RestartSec=10
+RestartSec=5
+TimeoutStartSec=60
 StandardOutput=journal
 StandardError=journal
 
@@ -116,14 +114,40 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
+# Создание self-signed SSL сертификата
+echo "🔒 Создание self-signed SSL сертификата..."
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/ssl/private/ssl-cert-snakeoil.key \
+    -out /etc/ssl/certs/ssl-cert-snakeoil.pem \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=cloud.l0.mom"
+
+# Остановка и очистка проблемного сервиса
+echo "🔧 Исправление проблемного сервиса..."
+sudo systemctl stop xcloud 2>/dev/null || true
+sudo systemctl reset-failed xcloud 2>/dev/null || true
+sudo -u xcloud pm2 kill 2>/dev/null || true
+
 # Активация сервиса
 sudo systemctl daemon-reload
 sudo systemctl enable xcloud
 sudo systemctl start xcloud
 
-# Автоматическая настройка SSL сертификата
-echo "🔒 Настройка SSL сертификата для cloud.l0.mom..."
-sudo certbot --nginx -d cloud.l0.mom --non-interactive --agree-tos --email admin@cloud.l0.mom || echo "⚠️  Certbot не смог настроить SSL"
+# Проверка статуса
+echo "📊 Проверка статуса сервиса..."
+sudo systemctl status xcloud --no-pager
+
+# Проверка DNS и настройка SSL сертификата
+echo "🔍 Проверка DNS для cloud.l0.mom..."
+if nslookup cloud.l0.mom > /dev/null 2>&1; then
+    echo "✅ DNS запись найдена, настраиваем Let's Encrypt сертификат..."
+    sudo certbot --nginx -d cloud.l0.mom --non-interactive --agree-tos --email admin@cloud.l0.mom
+    echo "✅ Let's Encrypt сертификат настроен!"
+else
+    echo "⚠️  DNS запись не найдена, используем self-signed сертификат"
+    echo "📝 Для получения настоящего SSL сертификата:"
+    echo "   1. Настройте DNS запись A для cloud.l0.mom -> ваш IP"
+    echo "   2. Запустите: sudo certbot --nginx -d cloud.l0.mom"
+fi
 
 echo ""
 echo "✅ Развертывание Part 2 завершено!"
