@@ -1,7 +1,8 @@
 const path = require('path');
 
-// Load environment variables from prod.env
-require('dotenv').config({ path: path.join(__dirname, 'prod.env') });
+// Force reload environment variables from prod.env
+delete require.cache[require.resolve('dotenv')];
+require('dotenv').config({ path: path.join(__dirname, 'prod.env'), override: true });
 
 // Check if prod.env exists and has required variables
 if (!process.env.MAIN_API_KEY || !process.env.UPLOAD_API_KEY) {
@@ -9,6 +10,10 @@ if (!process.env.MAIN_API_KEY || !process.env.UPLOAD_API_KEY) {
   console.error('📝 Please create prod.env from example.env and configure your API keys');
   console.error('   cp example.env prod.env');
   console.error('   nano prod.env');
+  console.error('');
+  console.error('Current environment variables:');
+  console.error('MAIN_API_KEY:', process.env.MAIN_API_KEY);
+  console.error('UPLOAD_API_KEY:', process.env.UPLOAD_API_KEY);
   process.exit(1);
 }
 
