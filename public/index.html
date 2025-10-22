@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xCloud Storage</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☁</text></svg>">
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -169,20 +170,6 @@
     </div>
 
     <script src="script.js"></script>
-    <script>
-        // Check if CSS and JS loaded properly
-        window.addEventListener('load', function() {
-            console.log('Page loaded');
-            // Force show login screen if main content is visible
-            const mainContent = document.getElementById('mainContent');
-            const loginScreen = document.getElementById('loginScreen');
-            
-            if (mainContent && mainContent.style.display !== 'none') {
-                console.log('Hiding main content, showing login');
-                mainContent.style.display = 'none';
-                if (loginScreen) loginScreen.style.display = 'flex';
-            }
-        });
-    </script>
+    <script src="init.js"></script>
 </body>
 </html>
