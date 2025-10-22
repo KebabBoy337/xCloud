@@ -1,74 +1,18 @@
 #!/bin/bash
 
-# xCloud Storage Deployment Script for Ubuntu
-# Автоматический скрипт развертывания
+# xCloud Storage - Part 2 Deployment Script
+# Вторая часть развертывания (после PM2)
 
 set -e
 
-echo "🚀 Начинаем развертывание xCloud Storage..."
+echo "🚀 Продолжаем развертывание xCloud Storage (Part 2)..."
 
-# Обновление системы
-echo "📦 Обновление системы..."
-sudo apt update && sudo apt upgrade -y
-
-# Установка Node.js (LTS версия)
-echo "📦 Установка Node.js..."
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Установка PM2 для управления процессами
-echo "📦 Установка PM2..."
-sudo npm install -g pm2
-
-# Установка nginx
-echo "📦 Установка Nginx..."
-sudo apt install -y nginx
-
-# Создание пользователя для приложения
-echo "👤 Создание пользователя..."
-sudo useradd -m -s /bin/bash xcloud || echo "Пользователь xcloud уже существует"
-
-# Создание директорий
-echo "📁 Создание директорий..."
-sudo mkdir -p /opt/xcloud
-sudo mkdir -p /opt/xcloud/logs
-sudo mkdir -p /opt/xcloud/storage
-sudo mkdir -p /var/log/xcloud
-
-# Копирование файлов
-echo "📋 Копирование файлов..."
-sudo cp -r . /opt/xcloud/
-sudo chown -R xcloud:xcloud /opt/xcloud
-sudo chown -R xcloud:xcloud /var/log/xcloud
-
-# Установка зависимостей
-echo "📦 Установка зависимостей..."
+# Переходим в директорию приложения
 cd /opt/xcloud
-sudo -u xcloud npm install --production
-
-# Настройка PM2
-echo "⚙️ Настройка PM2..."
-sudo -u xcloud pm2 start ecosystem.config.js
-sudo -u xcloud pm2 save
-sudo -u xcloud pm2 startup
-
-# Ждем запуска PM2
-echo "⏳ Ожидание запуска PM2..."
-sleep 5
 
 # Проверяем статус PM2
-echo "📊 Статус PM2:"
+echo "📊 Проверка статуса PM2..."
 sudo -u xcloud pm2 list
-
-echo ""
-echo "✅ Первая часть развертывания завершена!"
-echo "📋 PM2 запущен и работает"
-echo ""
-echo "🚀 Для завершения развертывания запустите:"
-echo "   sudo bash deploy-part2.sh"
-echo ""
-echo "⏳ Или подождите 10 секунд для автоматического продолжения..."
-sleep 10
 
 # Установка Certbot для SSL
 echo "📦 Установка Certbot..."
@@ -196,61 +140,8 @@ if ! sudo systemctl is-active --quiet xcloud; then
     sudo systemctl status xcloud --no-pager
 fi
 
-# Создание скрипта для управления
-echo "📝 Создание скрипта управления..."
-sudo tee /usr/local/bin/xcloud > /dev/null <<EOF
-#!/bin/bash
-case "\$1" in
-    start)
-        sudo systemctl start xcloud
-        ;;
-    stop)
-        sudo systemctl stop xcloud
-        ;;
-    restart)
-        sudo systemctl restart xcloud
-        ;;
-    status)
-        sudo systemctl status xcloud
-        ;;
-    logs)
-        sudo journalctl -u xcloud -f
-        ;;
-    fix)
-        echo "🔧 Исправление сервиса..."
-        sudo systemctl stop xcloud
-        sudo systemctl reset-failed xcloud
-        sudo -u xcloud pm2 kill
-        sudo systemctl start xcloud
-        echo "✅ Сервис исправлен"
-        ;;
-    *)
-        echo "Использование: xcloud {start|stop|restart|status|logs|fix}"
-        exit 1
-        ;;
-esac
-EOF
-
-sudo chmod +x /usr/local/bin/xcloud
-
-# Создание скрипта для SSL (Let's Encrypt)
-echo "📝 Создание скрипта SSL..."
-sudo tee /usr/local/bin/xcloud-ssl > /dev/null <<EOF
-#!/bin/bash
-echo "🔒 Настройка SSL сертификата для IP: 151.243.208.2"
-
-# Настройка SSL для IP адреса
-echo "🔧 Настройка SSL для IP: 151.243.208.2"
-sudo certbot --nginx -d 151.243.208.2 --non-interactive --agree-tos --email admin@151.243.208.2
-
-echo "✅ SSL сертификат настроен!"
-echo "🌐 Приложение доступно по адресу: https://151.243.208.2"
-EOF
-
-sudo chmod +x /usr/local/bin/xcloud-ssl
-
 # Автоматическая настройка SSL для localhost (self-signed)
-echo "🔒 Настройка self-signed SSL для localhost..."
+echo "🔒 Настройка self-signed SSL для 151.243.208.2..."
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout /etc/ssl/private/ssl-cert-snakeoil.key \
     -out /etc/ssl/certs/ssl-cert-snakeoil.pem \
@@ -261,7 +152,7 @@ echo "🔒 Настройка SSL сертификата для 151.243.208.2...
 sudo certbot --nginx -d 151.243.208.2 --non-interactive --agree-tos --email admin@151.243.208.2 || echo "⚠️  Certbot не смог настроить SSL, используем self-signed"
 
 echo ""
-echo "✅ Развертывание завершено!"
+echo "✅ Развертывание Part 2 завершено!"
 echo ""
 echo "🔑 API Ключи:"
 echo "   Main Key: main_key_2024_secure_12345"
