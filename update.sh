@@ -101,15 +101,18 @@ if [ -f "/opt/xcloud/prod.env" ]; then
     print_status "Сохранен prod.env"
 fi
 
-# Очищаем директорию (кроме node_modules и storage)
+# ВАЖНО: Папка /opt/xcloud/storage содержит файлы пользователей - НЕ УДАЛЯЕМ!
+print_status "Защищаем папку storage с файлами пользователей"
+
+# Очищаем директорию (кроме node_modules, storage и prod.env)
 print_status "Очистка /opt/xcloud..."
 find /opt/xcloud -maxdepth 1 -type f -name "*.js" -delete
 find /opt/xcloud -maxdepth 1 -type f -name "*.json" -delete
 find /opt/xcloud -maxdepth 1 -type f -name "*.md" -delete
 find /opt/xcloud -maxdepth 1 -type f -name "*.sh" -delete
-find /opt/xcloud -maxdepth 1 -type f -name "*.env" -delete
+find /opt/xcloud -maxdepth 1 -type f -name "example.env" -delete
 rm -rf /opt/xcloud/public
-rm -rf /opt/xcloud/storage
+# НЕ удаляем storage - там файлы пользователей!
 
 # Копируем новые файлы
 cp -r "$SOURCE_DIR"/* /opt/xcloud/
