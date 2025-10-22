@@ -19,8 +19,10 @@
             background: #0a0a0a;
             color: #ffffff;
         }
-        .main-content { display: none; }
-        .main-content.authenticated { display: block; }
+        .main-content { display: none !important; }
+        .main-content.authenticated { display: block !important; }
+        #mainContent { display: none !important; }
+        #mainContent.authenticated { display: block !important; }
     </style>
 </head>
 <body>
@@ -71,7 +73,7 @@
         </div>
 
         <!-- Main Content -->
-        <main class="main" id="mainContent" style="display: none;">
+        <main class="main" id="mainContent" style="display: none !important;">
             <div class="container">
                 <!-- Stats Cards -->
                 <div class="stats-grid">

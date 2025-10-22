@@ -9,10 +9,15 @@ window.addEventListener('load', function() {
     const mainContent = document.getElementById('mainContent');
     const loginScreen = document.getElementById('loginScreen');
     
-    if (mainContent && mainContent.style.display !== 'none') {
-        console.log('Hiding main content, showing login');
+    // Always hide main content initially
+    if (mainContent) {
         mainContent.style.display = 'none';
-        if (loginScreen) loginScreen.style.display = 'flex';
+        mainContent.classList.remove('authenticated');
+    }
+    
+    // Always show login screen initially
+    if (loginScreen) {
+        loginScreen.style.display = 'flex';
     }
     
     // Check if xcloud object exists and initialize
