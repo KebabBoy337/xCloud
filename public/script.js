@@ -524,6 +524,8 @@ class xCloudStorage {
                 this.showToast(`File "${result.originalName}" uploaded successfully`, 'success');
                 this.closeUploadModal();
                 this.loadFiles();
+            } else if (response.status === 413) {
+                throw new Error('File too large. Maximum size: 500MB');
             } else {
                 throw new Error('Upload failed');
             }

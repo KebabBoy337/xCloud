@@ -28,5 +28,5 @@ module.exports = {
   
   // Storage Configuration
   STORAGE_PATH: process.env.STORAGE_PATH || './storage',
-  MAX_FILE_SIZE: process.env.MAX_FILE_SIZE || '100MB',
+  MAX_FILE_SIZE: process.env.MAX_FILE_SIZE || '500MB',
 };

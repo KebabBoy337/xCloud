@@ -114,14 +114,29 @@ find /opt/xcloud -maxdepth 1 -type f -name "example.env" -delete
 rm -rf /opt/xcloud/public
 # НЕ удаляем storage - там файлы пользователей!
 
-# Копируем новые файлы
-cp -r "$SOURCE_DIR"/* /opt/xcloud/
+# Копируем новые файлы, исключая storage
+print_status "Копирование файлов (исключая storage)..."
+rsync -av --exclude='storage' --exclude='node_modules' "$SOURCE_DIR"/ /opt/xcloud/
 
 # Восстанавливаем важные файлы
 if [ -f "/tmp/prod.env.backup" ]; then
     cp /tmp/prod.env.backup /opt/xcloud/prod.env
     rm /tmp/prod.env.backup
     print_status "Восстановлен prod.env"
+fi
+
+# Создаем папку storage если её нет
+if [ ! -d "/opt/xcloud/storage" ]; then
+    mkdir -p /opt/xcloud/storage
+    print_status "Создана папка storage"
+else
+    # Проверяем, есть ли файлы в storage
+    file_count=$(find /opt/xcloud/storage -type f | wc -l)
+    if [ "$file_count" -gt 0 ]; then
+        print_status "Найдено $file_count файлов в storage - защищены от удаления"
+    else
+        print_status "Папка storage пуста"
+    fi
 fi
 
 # Сразу исправляем права доступа

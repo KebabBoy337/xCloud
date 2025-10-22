@@ -25,8 +25,8 @@ app.use(helmet({
 }));
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ extended: true, limit: '500mb' }));
 
 // Fix Cross-Origin and Origin-Agent-Cluster headers
 app.use((req, res, next) => {
@@ -69,7 +69,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB
+    fileSize: 500 * 1024 * 1024 // 500MB
   }
 });
 
