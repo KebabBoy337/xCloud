@@ -52,15 +52,45 @@ sudo -u xcloud pm2 start ecosystem.config.js
 sudo -u xcloud pm2 save
 sudo -u xcloud pm2 startup
 
-# Настройка Nginx
-echo "⚙️ Настройка Nginx..."
+# Установка Certbot для SSL
+echo "📦 Установка Certbot..."
+sudo apt install -y certbot python3-certbot-nginx
+
+# Настройка Nginx с HTTPS
+echo "⚙️ Настройка Nginx с HTTPS..."
 sudo tee /etc/nginx/sites-available/xcloud > /dev/null <<EOF
+# HTTP to HTTPS redirect
 server {
     listen 80;
     server_name _;
+    return 301 https://\$server_name\$request_uri;
+}
+
+# HTTPS configuration
+server {
+    listen 443 ssl http2;
+    server_name _;
+    
+    # SSL configuration (will be updated by certbot)
+    ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+    
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
     
     # Максимальный размер загружаемого файла
     client_max_body_size 100M;
+    
+    # Static files caching
+    location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg)$ {
+        proxy_pass http://localhost:3000;
+        proxy_cache_valid 200 1d;
+        expires 1d;
+        add_header Cache-Control "public, immutable";
+    }
     
     location / {
         proxy_pass http://localhost:3000;
@@ -70,7 +100,7 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Proto https;
         proxy_cache_bypass \$http_upgrade;
         
         # Таймауты для больших файлов
@@ -158,14 +188,30 @@ sudo chmod +x /usr/local/bin/xcloud
 echo "📝 Создание скрипта SSL..."
 sudo tee /usr/local/bin/xcloud-ssl > /dev/null <<EOF
 #!/bin/bash
-# Установка SSL сертификата
-sudo apt install -y certbot python3-certbot-nginx
-echo "Введите доменное имя:"
+echo "🔒 Настройка SSL сертификата..."
+echo "Введите доменное имя (например: example.com):"
 read domain
-sudo certbot --nginx -d \$domain
+
+if [ -z "\$domain" ]; then
+    echo "❌ Доменное имя не указано"
+    exit 1
+fi
+
+echo "🔧 Настройка SSL для домена: \$domain"
+sudo certbot --nginx -d \$domain --non-interactive --agree-tos --email admin@\$domain
+
+echo "✅ SSL сертификат настроен!"
+echo "🌐 Приложение доступно по адресу: https://\$domain"
 EOF
 
 sudo chmod +x /usr/local/bin/xcloud-ssl
+
+# Автоматическая настройка SSL для localhost (self-signed)
+echo "🔒 Настройка self-signed SSL для localhost..."
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/ssl/private/ssl-cert-snakeoil.key \
+    -out /etc/ssl/certs/ssl-cert-snakeoil.pem \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
 
 echo ""
 echo "✅ Развертывание завершено!"
@@ -175,7 +221,8 @@ echo "   Main Key: main_key_2024_secure_12345"
 echo "   Upload Key: upload_key_2024_secure_67890"
 echo ""
 echo "🌐 Доступ к приложению:"
-echo "   http://your-server-ip"
+echo "   https://your-server-ip (с self-signed сертификатом)"
+echo "   http://your-server-ip (автоматически перенаправляется на HTTPS)"
 echo ""
 echo "📋 Управление сервисом:"
 echo "   xcloud start    - запустить"
@@ -184,8 +231,11 @@ echo "   xcloud restart  - перезапустить"
 echo "   xcloud status   - статус"
 echo "   xcloud logs     - логи"
 echo ""
-echo "🔒 Для SSL сертификата:"
+echo "🔒 Для настройки SSL сертификата (Let's Encrypt):"
 echo "   xcloud-ssl"
 echo ""
 echo "📁 Файлы хранятся в: /opt/xcloud/storage"
 echo "📋 Логи в: /var/log/xcloud/"
+echo ""
+echo "⚠️  При первом заходе браузер покажет предупреждение о self-signed сертификате"
+echo "   Нажмите 'Дополнительно' -> 'Перейти на сайт' для продолжения"
