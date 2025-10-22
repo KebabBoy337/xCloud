@@ -35,6 +35,7 @@ print_status "Stopping PM2 processes..."
 if command -v pm2 &> /dev/null; then
     pm2 stop xcloud-storage 2>/dev/null || true
     pm2 delete xcloud-storage 2>/dev/null || true
+    pm2 kill 2>/dev/null || true
     pm2 save 2>/dev/null || true
     print_status "PM2 processes stopped and removed"
 else
@@ -43,35 +44,35 @@ fi
 
 # Stop and disable systemd service
 print_status "Stopping systemd service..."
-if systemctl is-active --quiet xcloud-storage; then
-    sudo systemctl stop xcloud-storage 2>/dev/null || true
-    print_status "xcloud-storage service stopped"
+if systemctl is-active --quiet xcloud; then
+    sudo systemctl stop xcloud 2>/dev/null || true
+    print_status "xcloud service stopped"
 fi
 
-if systemctl is-enabled --quiet xcloud-storage; then
-    sudo systemctl disable xcloud-storage 2>/dev/null || true
-    print_status "xcloud-storage service disabled"
+if systemctl is-enabled --quiet xcloud; then
+    sudo systemctl disable xcloud 2>/dev/null || true
+    print_status "xcloud service disabled"
 fi
 
 # Remove systemd service file
 print_status "Removing systemd service file..."
-sudo rm -f /etc/systemd/system/xcloud-storage.service 2>/dev/null || true
+sudo rm -f /etc/systemd/system/xcloud.service 2>/dev/null || true
 sudo systemctl daemon-reload 2>/dev/null || true
 print_status "Systemd service file removed"
 
 # Remove application directory
 print_status "Removing application directory..."
-if [ -d "/opt/xcloud-storage" ]; then
-    sudo rm -rf /opt/xcloud-storage
-    print_status "Application directory removed: /opt/xcloud-storage"
+if [ -d "/opt/xcloud" ]; then
+    sudo rm -rf /opt/xcloud
+    print_status "Application directory removed: /opt/xcloud"
 else
-    print_warning "Application directory not found: /opt/xcloud-storage"
+    print_warning "Application directory not found: /opt/xcloud"
 fi
 
 # Remove storage directory
 print_status "Removing storage directory..."
-if [ -d "/opt/xcloud-storage/storage" ]; then
-    sudo rm -rf /opt/xcloud-storage/storage
+if [ -d "/opt/xcloud/storage" ]; then
+    sudo rm -rf /opt/xcloud/storage
     print_status "Storage directory removed"
 else
     print_warning "Storage directory not found"
@@ -129,10 +130,26 @@ if [ -d "/usr/local/lib/node_modules/xcloud-storage" ]; then
     print_status "Node.js modules removed"
 fi
 
+# Remove nginx configuration
+print_status "Removing nginx configuration..."
+sudo rm -f /etc/nginx/sites-available/xcloud 2>/dev/null || true
+sudo rm -f /etc/nginx/sites-enabled/xcloud 2>/dev/null || true
+sudo systemctl restart nginx 2>/dev/null || true
+print_status "Nginx configuration removed"
+
+# Remove SSL certificates
+print_status "Removing SSL certificates..."
+sudo certbot delete --cert-name cloud.l0.mom 2>/dev/null || true
+sudo rm -rf /etc/letsencrypt/live/cloud.l0.mom 2>/dev/null || true
+sudo rm -rf /etc/letsencrypt/archive/cloud.l0.mom 2>/dev/null || true
+sudo rm -rf /etc/letsencrypt/renewal/cloud.l0.mom.conf 2>/dev/null || true
+print_status "SSL certificates removed"
+
 # Remove any remaining symlinks
 print_status "Removing symlinks..."
 sudo rm -f /usr/local/bin/xcloud 2>/dev/null || true
 sudo rm -f /usr/bin/xcloud 2>/dev/null || true
+sudo rm -f /usr/local/bin/xcloud-ssl 2>/dev/null || true
 print_status "Symlinks removed"
 
 # Final cleanup
@@ -148,8 +165,9 @@ echo ""
 echo "✅ Removed:"
 echo "   - PM2 processes and configurations"
 echo "   - Systemd service and files"
-echo "   - Application directory (/opt/xcloud-storage)"
+echo "   - Application directory (/opt/xcloud)"
 echo "   - Storage files and backups"
+echo "   - Nginx configuration and SSL certificates"
 echo "   - Log files and temporary files"
 echo "   - Cron jobs and environment variables"
 echo "   - Node.js modules and symlinks"
@@ -159,6 +177,7 @@ echo "   If you want to reinstall, you'll need to run the deploy script again."
 echo ""
 echo "🔍 To verify cleanup, run:"
 echo "   pm2 list"
-echo "   systemctl status xcloud-storage"
-echo "   ls -la /opt/xcloud-storage"
+echo "   systemctl status xcloud"
+echo "   ls -la /opt/xcloud"
+echo "   sudo certbot certificates"
 echo ""

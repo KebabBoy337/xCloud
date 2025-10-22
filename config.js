@@ -12,11 +12,4 @@ module.exports = {
   STORAGE_PATH: './storage',
   MAX_FILE_SIZE: '100MB',
   
-  // S3 Configuration (optional)
-  AWS: {
-    ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || 'your_aws_key345987398475983745',
-    SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY || 'your_aws_secret345876343784658',
-    REGION: process.env.AWS_REGION || 'us-east-1',
-    BUCKET: process.env.S3_BUCKET || 'your-bucket-name'
-  }
 };
