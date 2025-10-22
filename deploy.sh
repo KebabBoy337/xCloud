@@ -46,6 +46,15 @@ echo "📝 Создание prod.env..."
 sudo cp /opt/xcloud/example.env /opt/xcloud/prod.env
 sudo chown xcloud:xcloud /opt/xcloud/prod.env
 
+# Проверка что prod.env создан
+if [ ! -f "/opt/xcloud/prod.env" ]; then
+    echo "❌ Ошибка: prod.env не создан!"
+    exit 1
+fi
+
+echo "✅ prod.env создан успешно"
+echo "⚠️  ВАЖНО: Измените API ключи в /opt/xcloud/prod.env перед использованием!"
+
 # Установка зависимостей
 echo "📦 Установка зависимостей..."
 cd /opt/xcloud
