@@ -143,6 +143,25 @@ sudo -u xcloud npm install --production
 sudo -u xcloud pm2 restart xcloud-storage
 ```
 
+## 🧹 Complete Cleanup
+
+To completely remove xCloud Storage from your system:
+
+```bash
+# Run the cleanup script
+sudo ./cleanup.sh
+```
+
+This will remove:
+- All PM2 processes and configurations
+- Systemd service and files
+- Application directory and storage files
+- Log files and temporary files
+- Cron jobs and environment variables
+- Node.js modules and symlinks
+
+⚠️ **Warning**: This will permanently delete all files and configurations!
+
 ## 📞 Support
 
 If you encounter problems, check:

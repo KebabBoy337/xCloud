@@ -34,6 +34,16 @@ body {
     flex-direction: column;
 }
 
+/* Hide main content by default */
+.main-content {
+    display: none;
+}
+
+/* Show main content when authenticated */
+.main-content.authenticated {
+    display: block;
+}
+
 /* Login Screen */
 .login-screen {
     position: fixed;
@@ -664,6 +674,38 @@ body {
 .stat-icon i.fa-clock:before {
     content: "🕐";
 }
+
+/* Fallback for all Font Awesome icons */
+.fas, .far, .fab {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif;
+}
+
+/* If Font Awesome fails to load, show emoji fallbacks */
+.fa-cloud:before { content: "☁"; }
+.fa-upload:before { content: "⬆"; }
+.fa-sign-in-alt:before { content: "🔑"; }
+.fa-sync-alt:before { content: "🔄"; }
+.fa-sign-out-alt:before { content: "🚪"; }
+.fa-search:before { content: "🔍"; }
+.fa-times:before { content: "✕"; }
+.fa-cloud-upload-alt:before { content: "☁⬆"; }
+.fa-spinner:before { content: "⏳"; }
+.fa-folder:before { content: "📁"; }
+.fa-hdd:before { content: "💾"; }
+.fa-clock:before { content: "🕐"; }
+.fa-download:before { content: "⬇"; }
+.fa-trash:before { content: "🗑"; }
+.fa-image:before { content: "🖼"; }
+.fa-video:before { content: "🎥"; }
+.fa-music:before { content: "🎵"; }
+.fa-file-pdf:before { content: "📄"; }
+.fa-file-word:before { content: "📝"; }
+.fa-file-excel:before { content: "📊"; }
+.fa-file-powerpoint:before { content: "📽"; }
+.fa-file-archive:before { content: "📦"; }
+.fa-file-alt:before { content: "📄"; }
+.fa-file-code:before { content: "💻"; }
+.fa-file:before { content: "📄"; }
 
 /* Empty State */
 .empty-state {

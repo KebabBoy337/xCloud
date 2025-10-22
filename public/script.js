@@ -517,13 +517,25 @@ class xCloudStorage {
     }
 
     showLoginScreen() {
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('mainContent').style.display = 'none';
+        const loginScreen = document.getElementById('loginScreen');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (loginScreen) loginScreen.style.display = 'flex';
+        if (mainContent) {
+            mainContent.style.display = 'none';
+            mainContent.classList.remove('authenticated');
+        }
     }
 
     showMainContent() {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'block';
+        const loginScreen = document.getElementById('loginScreen');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (loginScreen) loginScreen.style.display = 'none';
+        if (mainContent) {
+            mainContent.style.display = 'block';
+            mainContent.classList.add('authenticated');
+        }
     }
 
     logout() {
