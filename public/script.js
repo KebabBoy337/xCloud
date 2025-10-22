@@ -2,6 +2,8 @@ class xCloudStorage {
     constructor() {
         this.apiKey = '';
         this.files = [];
+        this.version = '3.0'; // Версия для отладки
+        console.log('xCloud Storage v' + this.version + ' initialized');
         this.init();
     }
 
@@ -224,6 +226,7 @@ class xCloudStorage {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('Files loaded:', data.files);
                 this.files = data.files || [];
                 this.renderFiles();
                 this.updateStats();
@@ -231,6 +234,7 @@ class xCloudStorage {
                 throw new Error('Failed to load files');
             }
         } catch (error) {
+            console.error('Error loading files:', error);
             this.showToast('Failed to load files: ' + error.message, 'error');
         } finally {
             this.showLoading(false);
@@ -255,7 +259,8 @@ class xCloudStorage {
     }
 
     createFileItem(file) {
-        const fileIcon = this.getFileIcon(file.name);
+        const displayName = file.displayName || file.name;
+        const fileIcon = this.getFileIcon(displayName);
         const fileSize = this.formatFileSize(file.size);
         const createdDate = new Date(file.created).toLocaleDateString('ru-RU');
         
@@ -265,7 +270,7 @@ class xCloudStorage {
                     <i class="${fileIcon.icon}"></i>
                 </div>
                 <div class="file-info">
-                    <div class="file-name" title="${file.name}">${file.name}</div>
+                    <div class="file-name" title="${displayName}">${displayName}</div>
                     <div class="file-meta">
                         <span>${fileSize}</span>
                         <span>${createdDate}</span>
@@ -399,50 +404,102 @@ class xCloudStorage {
         document.getElementById('uploadProgress').style.display = 'none';
         document.getElementById('progressFill').style.width = '0%';
         document.getElementById('progressText').textContent = '0%';
+        
+        // Clear stored file reference
+        this.selectedFile = null;
+        
+        // Remove file info display but preserve file input
+        const uploadContent = document.querySelector('.upload-content');
+        if (uploadContent) {
+            const fileInfo = uploadContent.querySelector('.file-info-display');
+            if (fileInfo) {
+                fileInfo.remove();
+            }
+            
+            // Restore original content if it was replaced
+            if (!uploadContent.querySelector('i.fa-cloud-upload-alt')) {
+                uploadContent.innerHTML = `
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h4>Drag file here</h4>
+                    <p>or click to select</p>
+                `;
+            }
+        }
     }
 
     handleFileSelect(files) {
         if (files.length === 0) return;
 
         const file = files[0];
+        console.log('File selected:', file.name, 'Size:', file.size);
+        
+        // Store the file reference for later use
+        this.selectedFile = file;
+        
         const startUploadBtn = document.getElementById('startUpload');
         if (startUploadBtn) {
             startUploadBtn.disabled = false;
             console.log('Upload button enabled for file:', file.name);
         }
         
-        // Show file info
+        // Show file info - but preserve the file input
         const uploadContent = document.querySelector('.upload-content');
         if (uploadContent) {
-            uploadContent.innerHTML = `
+            // Create a new content div instead of replacing the entire content
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'file-info-display';
+            fileInfo.innerHTML = `
                 <i class="fas fa-file"></i>
                 <h4>${file.name}</h4>
                 <p>${this.formatFileSize(file.size)}</p>
             `;
+            
+            // Clear previous file info and add new one
+            const existingInfo = uploadContent.querySelector('.file-info-display');
+            if (existingInfo) {
+                existingInfo.remove();
+            }
+            uploadContent.appendChild(fileInfo);
         }
     }
 
     async startUpload() {
+        console.log('startUpload called');
+        
         // Debug: Check if modal is visible
         const modal = document.getElementById('uploadModal');
         if (!modal || !modal.classList.contains('active')) {
             this.showToast('Upload modal is not open', 'error');
+            console.log('Modal not active');
             return;
         }
 
         const fileInput = document.getElementById('fileInput');
+        console.log('File input element:', fileInput);
+        
         if (!fileInput) {
             this.showToast('File input not found', 'error');
             console.error('File input element not found');
+            console.log('Available elements:', document.querySelectorAll('input[type="file"]'));
             return;
         }
         
-        const file = fileInput.files[0];
+        console.log('File input found, files:', fileInput.files);
+        let file = fileInput.files[0];
+
+        // Fallback: use stored file reference if fileInput doesn't have files
+        if (!file && this.selectedFile) {
+            console.log('Using stored file reference:', this.selectedFile.name);
+            file = this.selectedFile;
+        }
 
         if (!file) {
             this.showToast('Select a file', 'error');
+            console.log('No file selected');
             return;
         }
+
+        console.log('Starting upload for file:', file.name);
 
         const formData = new FormData();
         formData.append('file', file);

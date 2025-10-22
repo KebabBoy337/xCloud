@@ -3,6 +3,8 @@
 # xCloud Storage - Update Script
 # Обновление проекта с GitHub и перезапуск сервисов
 
+set -e
+
 echo "🔄 xCloud Storage - Update from GitHub"
 echo "======================================"
 
@@ -10,6 +12,7 @@ echo "======================================"
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 print_status() {
@@ -23,6 +26,16 @@ print_warning() {
 print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
+
+print_step() {
+    echo -e "${BLUE}[STEP]${NC} $1"
+}
+
+# Проверка root прав
+if [ "$EUID" -ne 0 ]; then
+    print_error "Запустите с sudo: sudo bash update.sh"
+    exit 1
+fi
 
 # Проверка, что мы в правильной директории
 if [ ! -f "package.json" ] || [ ! -f "server.js" ]; then
@@ -42,12 +55,21 @@ if [ ! -d ".git" ]; then
     exit 1
 fi
 
+print_step "1. Проверка текущего статуса..."
+
+# Проверка текущего статуса сервиса
+if systemctl is-active --quiet xcloud; then
+    print_status "Сервис xcloud запущен"
+else
+    print_warning "Сервис xcloud не запущен"
+fi
+
 # Сохранение текущих изменений
-print_status "Сохранение текущих изменений..."
-git stash push -m "Auto-save before update $(date)"
+print_step "2. Сохранение текущих изменений..."
+git stash push -m "Auto-save before update $(date)" || print_warning "Нет изменений для сохранения"
 
 # Получение обновлений с GitHub
-print_status "Получение обновлений с GitHub..."
+print_step "3. Получение обновлений с GitHub..."
 git fetch origin
 
 # Проверка наличия обновлений
@@ -62,77 +84,89 @@ fi
 print_status "Найдены обновления. Начинаем обновление..."
 
 # Остановка сервисов
-print_status "Остановка сервисов..."
-sudo systemctl stop xcloud 2>/dev/null || true
+print_step "4. Остановка сервисов..."
+systemctl stop xcloud 2>/dev/null || print_warning "Сервис xcloud уже остановлен"
 
 # Принудительное обновление кода (перезаписывает локальные изменения)
-print_status "Обновление кода с GitHub..."
+print_step "5. Обновление кода с GitHub..."
 git reset --hard origin/main
 
 # Восстановление prod.env если он был удален
-print_status "Восстановление prod.env..."
+print_step "6. Проверка конфигурации..."
 if [ ! -f "prod.env" ]; then
     if [ -f "example.env" ]; then
         cp example.env prod.env
         print_status "prod.env восстановлен из example.env"
+        print_warning "⚠️  ВАЖНО: Измените API ключи в prod.env!"
     else
-        print_warning "example.env не найден, создайте prod.env вручную"
+        print_error "example.env не найден, создайте prod.env вручную"
+        exit 1
     fi
+else
+    print_status "prod.env найден, сохраняем существующие настройки"
 fi
 
 # Установка зависимостей
-print_status "Установка зависимостей..."
+print_step "7. Установка зависимостей..."
 npm install --production
 
 # Проверка конфигурации
-print_status "Проверка конфигурации..."
 if [ ! -f "config.js" ]; then
     print_error "Файл config.js не найден!"
     exit 1
 fi
 
+# Проверка прав доступа
+print_step "8. Исправление прав доступа..."
+chown -R xcloud:xcloud /opt/xcloud
+chmod -R 755 /opt/xcloud
+
 # Перезапуск сервисов
-print_status "Перезапуск сервисов..."
-sudo systemctl start xcloud
+print_step "9. Перезапуск сервисов..."
+systemctl start xcloud
+
+# Ожидание запуска
+print_step "10. Ожидание запуска сервиса..."
+sleep 5
 
 # Проверка статуса
-print_status "Проверка статуса сервисов..."
-sleep 3
+print_step "11. Проверка статуса сервисов..."
 
-if sudo systemctl is-active --quiet xcloud; then
+if systemctl is-active --quiet xcloud; then
     print_status "✅ Сервис xcloud запущен успешно"
 else
     print_error "❌ Сервис xcloud не запустился"
-    print_status "Проверьте логи: sudo journalctl -u xcloud -f"
+    print_status "Проверьте логи: journalctl -u xcloud -f"
     exit 1
 fi
 
-# Проверка systemd сервиса
-if sudo systemctl is-active --quiet xcloud; then
-    print_status "✅ Systemd сервис запущен успешно"
-else
-    print_error "❌ Systemd сервис не запустился"
-    print_status "Проверьте логи: sudo journalctl -u xcloud -f"
-fi
-
 # Проверка nginx
-if sudo nginx -t > /dev/null 2>&1; then
+print_step "12. Проверка Nginx..."
+if nginx -t > /dev/null 2>&1; then
     print_status "✅ Nginx конфигурация корректна"
-    sudo systemctl reload nginx
+    systemctl reload nginx
 else
     print_warning "⚠️  Проблемы с nginx конфигурацией"
-    print_status "Проверьте: sudo nginx -t"
+    print_status "Проверьте: nginx -t"
 fi
 
 # Финальная проверка
-print_status "Финальная проверка..."
-sleep 2
+print_step "13. Финальная проверка..."
+sleep 3
 
 # Проверка доступности приложения
 if curl -s http://localhost:3000/api/health > /dev/null; then
     print_status "✅ Приложение отвечает на запросы"
 else
     print_warning "⚠️  Приложение не отвечает на localhost:3000"
+    print_status "Проверьте логи: journalctl -u xcloud -f"
+fi
+
+# Проверка внешнего доступа
+if curl -s https://cloud.l0.mom/api/health > /dev/null; then
+    print_status "✅ Внешний доступ работает"
+else
+    print_warning "⚠️  Внешний доступ не работает"
 fi
 
 echo ""
@@ -146,7 +180,7 @@ echo "🌐 Приложение доступно по адресу:"
 echo "   https://cloud.l0.mom"
 echo ""
 echo "📋 Логи:"
-echo "   sudo journalctl -u xcloud -f"
+echo "   journalctl -u xcloud -f"
 echo ""
 echo "🔄 Для следующего обновления просто запустите:"
 echo "   sudo bash update.sh"

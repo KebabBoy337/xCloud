@@ -5,7 +5,6 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs-extra');
-const { v4: uuidv4 } = require('uuid');
 const config = require('./config');
 
 const app = express();
@@ -53,7 +52,16 @@ const storage = multer.diskStorage({
     cb(null, config.STORAGE_PATH);
   },
   filename: (req, file, cb) => {
-    const uniqueName = `${uuidv4()}-${file.originalname}`;
+    // Получаем имя файла без расширения и расширение отдельно
+    const fileExt = path.extname(file.originalname);
+    const baseName = path.basename(file.originalname, fileExt);
+    
+    // Создаем дату и время в формате YYYY-MM-DD_HH-MM
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 19).replace(/[-:]/g, '-').replace('T', '_');
+    
+    // Формируем новое имя: оригинальное_имя_(дата_время).расширение
+    const uniqueName = `${baseName}_(${dateStr})${fileExt}`;
     cb(null, uniqueName);
   }
 });
@@ -75,8 +83,18 @@ const checkPermission = (requiredRole) => {
   };
 };
 
-// Serve static files
-app.use(express.static('public'));
+// Serve static files with no-cache headers for JS and HTML files
+app.use(express.static('public', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.js') || path.endsWith('.html') || path.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Last-Modified', new Date().toUTCString());
+      res.setHeader('ETag', '"' + Date.now() + '"');
+    }
+  }
+}));
 
 // Auth check middleware for all routes except login
 app.use((req, res, next) => {
@@ -125,8 +143,20 @@ app.get('/api/files', checkPermission('main'), async (req, res) => {
       const filePath = path.join(config.STORAGE_PATH, file);
       const stats = await fs.stat(filePath);
       
+      // Определяем отображаемое имя файла
+      let displayName = file;
+      
+      // Если файл имеет старое имя с UUID, извлекаем оригинальное имя
+      if (file.includes('-') && file.length > 36) {
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/;
+        if (uuidPattern.test(file)) {
+          displayName = file.replace(uuidPattern, '');
+        }
+      }
+      
       fileList.push({
-        name: file,
+        name: file, // Реальное имя файла для скачивания
+        displayName: displayName, // Отображаемое имя
         size: stats.size,
         created: stats.birthtime,
         modified: stats.mtime
