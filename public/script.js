@@ -2,7 +2,7 @@ class xCloudStorage {
     constructor() {
         this.apiKey = '';
         this.files = [];
-        this.version = '3.0'; // Версия для отладки
+        this.version = '1.1.0'; // Версия приложения
         console.log('xCloud Storage v' + this.version + ' initialized');
         this.init();
     }

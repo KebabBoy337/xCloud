@@ -1,6 +1,6 @@
 {
   "name": "xcloud-storage",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Modern file storage with glass UI",
   "main": "server.js",
   "scripts": {
