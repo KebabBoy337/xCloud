@@ -46,4 +46,19 @@ document.addEventListener('DOMContentLoaded', function() {
         mainContent.style.display = 'none';
         if (loginScreen) loginScreen.style.display = 'flex';
     }
+    
+    // Check if CSS loaded properly
+    setTimeout(function() {
+        const body = document.body;
+        const computedStyle = window.getComputedStyle(body);
+        
+        // If background is still default (white/transparent), CSS didn't load
+        if (computedStyle.backgroundColor === 'rgba(0, 0, 0, 0)' || 
+            computedStyle.backgroundColor === 'rgb(255, 255, 255)') {
+            console.log('CSS not loaded, applying fallback styles');
+            body.style.background = 'linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 50%, #0f0f0f 100%)';
+            body.style.color = '#ffffff';
+            body.style.minHeight = '100vh';
+        }
+    }, 100);
 });
