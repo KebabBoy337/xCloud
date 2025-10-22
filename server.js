@@ -183,6 +183,14 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   });
 });
 
+// Error handling for file uploads
+app.use((error, req, res, next) => {
+  if (error.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'File too large. Maximum size: 500MB' });
+  }
+  next(error);
+});
+
 // Download file
 app.get('/api/download/:filename', checkPermission('main'), (req, res) => {
   const filename = req.params.filename;
@@ -224,4 +232,7 @@ app.listen(config.PORT, () => {
   console.log(`📁 Storage path: ${config.STORAGE_PATH}`);
   console.log(`🔑 Main API Key: ${config.MAIN_API_KEY}`);
   console.log(`🔑 Upload API Key: ${config.UPLOAD_API_KEY}`);
+  console.log(`📦 Max file size: ${config.MAX_FILE_SIZE}`);
+  console.log(`📦 Multer limit: 500MB`);
+  console.log(`📦 Express limit: 500MB`);
 });
