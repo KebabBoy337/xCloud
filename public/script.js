@@ -281,9 +281,12 @@ class xCloudStorage {
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 const term = e.target.value.trim();
+                console.log('🔍 Text search input:', term);
                 if (term === '') {
+                    console.log('🔄 Showing all files');
                     this.showAllFiles();
                 } else {
+                    console.log('🔍 Filtering files by name');
                     this.filterFiles(term);
                 }
             });
@@ -886,15 +889,19 @@ class xCloudStorage {
     }
 
     filterFiles(searchTerm) {
+        console.log('🔍 Filtering files with term:', searchTerm);
         const fileItems = document.querySelectorAll('.file-item');
         const term = searchTerm.toLowerCase();
 
+        let visibleCount = 0;
         fileItems.forEach(item => {
             const filename = item.dataset.filename.toLowerCase();
             const displayName = item.querySelector('.file-name')?.textContent.toLowerCase() || '';
             const isVisible = filename.includes(term) || displayName.includes(term);
             item.style.display = isVisible ? 'flex' : 'none';
+            if (isVisible) visibleCount++;
         });
+        console.log(`📊 Found ${visibleCount} files matching "${searchTerm}"`);
     }
 
     showAllFiles() {
@@ -905,6 +912,7 @@ class xCloudStorage {
     }
 
     async searchFilesByDate(date) {
+        console.log('📅 Searching files by date:', date);
         if (!this.apiKey) return;
 
         this.showLoading(true);
@@ -915,6 +923,7 @@ class xCloudStorage {
                 url += `&folder=${encodeURIComponent(this.currentFolder)}`;
             }
             
+            console.log('🌐 API URL:', url);
             const response = await fetch(url, {
                 headers: {
                     'X-API-Key': this.apiKey
@@ -923,6 +932,7 @@ class xCloudStorage {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('📊 API Response:', data);
                 this.files = data.files || [];
                 this.folders = data.folders || [];
                 this.renderFiles();
@@ -935,6 +945,7 @@ class xCloudStorage {
                 throw new Error('Failed to search files');
             }
         } catch (error) {
+            console.error('❌ Date search error:', error);
             this.showToast('Search error: ' + error.message, 'error');
         } finally {
             this.showLoading(false);
@@ -943,14 +954,77 @@ class xCloudStorage {
 
     performDateSearch() {
         const dateInput = document.getElementById('dateSearchInput');
+        const searchInput = document.getElementById('searchInput');
         const date = dateInput.value;
+        const searchTerm = searchInput.value.trim();
+        
+        console.log('🔍 Date search triggered:', { date, searchTerm });
         
         if (!date) {
             this.showToast('Выберите дату для поиска', 'error');
             return;
         }
         
-        this.searchFilesByDate(date);
+        // If there's a search term, we need to combine both searches
+        if (searchTerm) {
+            console.log('🔄 Combining date and name search');
+            this.searchFilesByDateAndName(date, searchTerm);
+        } else {
+            console.log('📅 Date-only search');
+            this.searchFilesByDate(date);
+        }
+    }
+
+    async searchFilesByDateAndName(date, searchTerm) {
+        console.log('🔍 Combined search:', { date, searchTerm });
+        if (!this.apiKey) return;
+
+        this.showLoading(true);
+
+        try {
+            // First get files by date
+            let url = `/api/files/search?date=${encodeURIComponent(date)}`;
+            if (this.currentFolder) {
+                url += `&folder=${encodeURIComponent(this.currentFolder)}`;
+            }
+            
+            console.log('🌐 Combined API URL:', url);
+            const response = await fetch(url, {
+                headers: {
+                    'X-API-Key': this.apiKey
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📊 Date search results:', data);
+                
+                // Filter by name on client side
+                const filteredFiles = data.files.filter(file => {
+                    const filename = file.name.toLowerCase();
+                    const displayName = (file.displayName || file.name).toLowerCase();
+                    return filename.includes(searchTerm.toLowerCase()) || displayName.includes(searchTerm.toLowerCase());
+                });
+                
+                console.log('🔍 After name filtering:', filteredFiles);
+                
+                this.files = filteredFiles;
+                this.folders = data.folders || [];
+                this.renderFiles();
+                this.updateStats();
+                
+                // Show search results info
+                const dateStr = new Date(date).toLocaleDateString('ru-RU');
+                this.showToast(`Найдено ${filteredFiles.length} файлов с "${searchTerm}" за ${dateStr}`, 'info');
+            } else {
+                throw new Error('Failed to search files');
+            }
+        } catch (error) {
+            console.error('❌ Combined search error:', error);
+            this.showToast('Search error: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
     }
 
     clearDateSearch() {
