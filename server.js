@@ -308,18 +308,29 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   let finalName = originalName;
   let counter = 1;
   
+  console.log('Original filename:', originalName);
+  console.log('Base name:', baseName);
+  console.log('File extension:', fileExt);
+  
   // Check for duplicates and add index if needed
   while (true) {
     const targetPath = folder ? path.join(folderPath, finalName) : path.join(config.STORAGE_PATH, finalName);
     
+    console.log('Checking if file exists:', targetPath);
+    console.log('File exists:', fs.existsSync(targetPath));
+    
     if (!fs.existsSync(targetPath)) {
+      console.log('File does not exist, using name:', finalName);
       break; // File doesn't exist, we can use this name
     }
     
     // File exists, try with index (starting from 1, not 0)
     finalName = `${baseName} (${counter})${fileExt}`;
+    console.log('File exists, trying with index:', finalName);
     counter++;
   }
+  
+  console.log('Final filename:', finalName);
   
   // Move file to correct location with final name
   const sourcePath = req.file.path;
