@@ -8,6 +8,14 @@ class xCloudStorage {
         this.selectedFiles = new Set(); // Для отслеживания выбранных файлов
         this.selectedFolders = new Set(); // Для отслеживания выбранных папок
         this.currentTextSearch = ''; // Текущий текстовый поиск
+        this.iconCache = new Map(); // Кэш для иконок файлов
+        this.sizeCache = new Map(); // Кэш для размеров файлов
+        this.searchTimeout = null; // Таймер для debounce поиска
+        this.statsCache = null; // Кэш для статистики
+        this.breadcrumbCache = null; // Кэш для breadcrumb
+        this.publicStatusCache = new Map(); // Кэш для публичного статуса файлов
+        this.apiCache = new Map(); // Кэш для API ответов
+        this.elementCache = new Map(); // Кэш для DOM элементов
         this.init();
     }
 
@@ -349,15 +357,23 @@ class xCloudStorage {
             });
         }
 
-        // File actions (download/delete/link) - use event delegation
+        // File actions (download/delete/link) - use event delegation (оптимизированные)
         const fileList = document.getElementById('fileList');
         if (fileList) {
             fileList.addEventListener('click', (e) => {
-                if (e.target.closest('.download-btn')) {
-                    const filename = e.target.closest('.download-btn').dataset.filename;
+                // Кэшируем элементы для лучшей производительности
+                const downloadBtn = e.target.closest('.download-btn');
+                const deleteBtn = e.target.closest('.delete-btn');
+                const copyBtn = e.target.closest('.copy-link-btn');
+                const unarchiveBtn = e.target.closest('.unarchive-btn');
+                const slider = e.target.closest('.public-slider');
+                const checkbox = e.target.closest('.file-select-checkbox');
+                const folderItem = e.target.closest('.folder-item');
+                
+                if (downloadBtn) {
+                    const filename = downloadBtn.dataset.filename;
                     this.downloadFile(filename);
-                } else if (e.target.closest('.delete-btn')) {
-                    const deleteBtn = e.target.closest('.delete-btn');
+                } else if (deleteBtn) {
                     const filename = deleteBtn.dataset.filename;
                     const folderName = deleteBtn.dataset.folder;
                     
@@ -368,21 +384,21 @@ class xCloudStorage {
                         e.stopPropagation();
                         this.deleteFolder(folderName);
                     }
-                } else if (e.target.closest('.copy-link-btn')) {
-                    const filename = e.target.closest('.copy-link-btn').dataset.filename;
+                } else if (copyBtn) {
+                    const filename = copyBtn.dataset.filename;
                     this.copyPublicLink(filename);
-                } else if (e.target.closest('.unarchive-btn')) {
-                    const filename = e.target.closest('.unarchive-btn').dataset.filename;
+                } else if (unarchiveBtn) {
+                    const filename = unarchiveBtn.dataset.filename;
                     this.unarchiveFile(filename);
-                } else if (e.target.closest('.public-slider')) {
-                    const filename = e.target.closest('.public-slider').dataset.filename;
+                } else if (slider) {
+                    const filename = slider.dataset.filename;
                     const isPublic = e.target.checked;
                     if (isPublic) {
                         this.makeFilePublic(filename);
                     } else {
                         this.makeFilePrivate(filename);
                     }
-                } else if (e.target.closest('.file-select-checkbox')) {
+                } else if (checkbox) {
                     const filename = e.target.dataset.filename;
                     const folder = e.target.dataset.folder;
                     const isChecked = e.target.checked;
@@ -392,19 +408,20 @@ class xCloudStorage {
                     } else if (folder) {
                         this.toggleFolderSelection(folder, isChecked);
                     }
-                } else if (e.target.closest('.folder-item') && !e.target.closest('.delete-btn') && !e.target.closest('.file-checkbox')) {
-                    const folderName = e.target.closest('.folder-item').dataset.folder;
+                } else if (folderItem && !deleteBtn && !checkbox) {
+                    const folderName = folderItem.dataset.folder;
                     this.navigateToFolder(folderName);
                 }
             });
         }
 
-        // Breadcrumb navigation
+        // Breadcrumb navigation (оптимизированная)
         const breadcrumb = document.getElementById('breadcrumb');
         if (breadcrumb) {
             breadcrumb.addEventListener('click', (e) => {
-                if (e.target.closest('.breadcrumb-item')) {
-                    const folder = e.target.closest('.breadcrumb-item').dataset.folder;
+                const breadcrumbItem = e.target.closest('.breadcrumb-item');
+                if (breadcrumbItem) {
+                    const folder = breadcrumbItem.dataset.folder;
                     this.navigateToFolder(folder);
                 }
             });
@@ -456,17 +473,36 @@ class xCloudStorage {
                 `/api/files?folder=${encodeURIComponent(this.currentFolder)}` : 
                 '/api/files';
             
+            // Проверяем кэш API
+            const cacheKey = url;
+            if (this.apiCache.has(cacheKey)) {
+                const cachedData = this.apiCache.get(cacheKey);
+                this.files = cachedData.files || [];
+                this.folders = cachedData.folders || [];
+                this.currentFolder = cachedData.currentFolder || '';
+                this.renderFiles();
+                this.updateBreadcrumb();
+                this.updateStats();
+                this.loadPublicStatus();
+                this.showLoading(false);
+                return;
+            }
+            
             const response = await fetch(url, {
                 headers: {
                     'X-API-Key': this.apiKey
                 }
             });
-
+            
             if (response.ok) {
                 const data = await response.json();
                 this.files = data.files || [];
                 this.folders = data.folders || [];
                 this.currentFolder = data.currentFolder || '';
+                
+                // Сохраняем в кэш
+                this.apiCache.set(cacheKey, data);
+                
                 this.renderFiles();
                 this.updateBreadcrumb();
                 this.updateStats();
@@ -495,6 +531,9 @@ class xCloudStorage {
             return;
         }
 
+        // Use DocumentFragment for better performance
+        const fragment = document.createDocumentFragment();
+        
         // Sort folders alphabetically
         const sortedFolders = [...this.folders].sort((a, b) => a.name.localeCompare(b.name));
         // Sort files alphabetically
@@ -504,38 +543,52 @@ class xCloudStorage {
             return nameA.localeCompare(nameB);
         });
 
-        const foldersHtml = sortedFolders.map(folder => this.createFolderItem(folder)).join('');
-        const filesHtml = sortedFiles.map(file => this.createFileItem(file)).join('');
+        // Create elements directly in fragment
+        sortedFolders.forEach(folder => {
+            const folderElement = this.createFolderItem(folder);
+            fragment.appendChild(folderElement);
+        });
         
-        fileList.innerHTML = foldersHtml + filesHtml;
+        sortedFiles.forEach(file => {
+            const fileElement = this.createFileItem(file);
+            fragment.appendChild(fileElement);
+        });
+        
+        // Single DOM update
+        fileList.innerHTML = '';
+        fileList.appendChild(fragment);
     }
 
     createFolderItem(folder) {
         const createdDate = new Date(folder.created).toLocaleDateString('ru-RU');
         
-        return `
-            <div class="file-item folder-item" data-folder="${folder.name}">
-                <div class="file-checkbox">
-                    <input type="checkbox" class="file-select-checkbox" data-folder="${folder.name}" id="select-folder-${folder.name}">
-                    <label for="select-folder-${folder.name}" class="checkbox-label"></label>
-                </div>
-                <div class="file-icon folder">
-                    <i class="fas fa-folder"></i>
-                </div>
-                <div class="file-info">
-                    <div class="file-name" title="${folder.name}">${folder.name}</div>
-                    <div class="file-meta">
-                        <span>Folder</span>
-                        <span>${createdDate}</span>
-                    </div>
-                </div>
-                <div class="file-actions">
-                    <button class="file-action danger delete-btn" data-folder="${folder.name}" title="Delete Folder">
-                        <i class="fas fa-trash"></i>
-                    </button>
+        const folderDiv = document.createElement('div');
+        folderDiv.className = 'file-item folder-item';
+        folderDiv.dataset.folder = folder.name;
+        
+        folderDiv.innerHTML = `
+            <div class="file-checkbox">
+                <input type="checkbox" class="file-select-checkbox" data-folder="${folder.name}" id="select-folder-${folder.name}">
+                <label for="select-folder-${folder.name}" class="checkbox-label"></label>
+            </div>
+            <div class="file-icon folder">
+                <i class="fas fa-folder"></i>
+            </div>
+            <div class="file-info">
+                <div class="file-name" title="${folder.name}">${folder.name}</div>
+                <div class="file-meta">
+                    <span>Folder</span>
+                    <span>${createdDate}</span>
                 </div>
             </div>
+            <div class="file-actions">
+                <button class="file-action danger delete-btn" data-folder="${folder.name}" title="Delete Folder">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         `;
+        
+        return folderDiv;
     }
 
     createFileItem(file) {
@@ -544,52 +597,61 @@ class xCloudStorage {
         const fileSize = this.formatFileSize(file.size);
         const uploadTime = file.uploadTime ? new Date(file.uploadTime).toLocaleString('en-US') : new Date(file.created).toLocaleString('en-US');
         
-        return `
-            <div class="file-item" data-filename="${file.name}">
-                <div class="file-checkbox">
-                    <input type="checkbox" class="file-select-checkbox" data-filename="${file.name}" id="select-${file.name}">
-                    <label for="select-${file.name}" class="checkbox-label"></label>
+        const fileDiv = document.createElement('div');
+        fileDiv.className = 'file-item';
+        fileDiv.dataset.filename = file.name;
+        
+        fileDiv.innerHTML = `
+            <div class="file-checkbox">
+                <input type="checkbox" class="file-select-checkbox" data-filename="${file.name}" id="select-${file.name}">
+                <label for="select-${file.name}" class="checkbox-label"></label>
+            </div>
+            <div class="file-icon ${fileIcon.class}">
+                <i class="${fileIcon.icon}"></i>
+            </div>
+            <div class="file-info">
+                <div class="file-name" title="${displayName}">${displayName}</div>
+                <div class="file-meta">
+                    <span>${fileSize} • Uploaded: ${uploadTime}</span>
                 </div>
-                <div class="file-icon ${fileIcon.class}">
-                    <i class="${fileIcon.icon}"></i>
+            </div>
+            <div class="file-actions">
+                <div class="file-controls">
+                    ${this.isArchiveFile(displayName) ? `
+                    <button class="file-action unarchive-btn" data-filename="${file.name}" title="Extract Archive">
+                        <i class="fas fa-file-archive"></i>
+                    </button>
+                    ` : ''}
+                    <div class="public-toggle">
+                        <input type="checkbox" id="public-${file.name}" class="public-slider" data-filename="${file.name}">
+                        <label for="public-${file.name}" class="slider-label">
+                            <span class="slider-text">Private</span>
+                        </label>
+                    </div>
+                    <button class="file-action copy-link-btn" data-filename="${file.name}" title="Copy Link" disabled>
+                        <i class="fas fa-copy"></i>
+                    </button>
                 </div>
-                <div class="file-info">
-                    <div class="file-name" title="${displayName}">${displayName}</div>
-                    <div class="file-meta">
-                        <span>${fileSize} • Uploaded: ${uploadTime}</span>
-                    </div>
-                </div>
-                <div class="file-actions">
-                    <div class="file-controls">
-                        ${this.isArchiveFile(displayName) ? `
-                        <button class="file-action unarchive-btn" data-filename="${file.name}" title="Extract Archive">
-                            <i class="fas fa-file-archive"></i>
-                        </button>
-                        ` : ''}
-                        <div class="public-toggle">
-                            <input type="checkbox" id="public-${file.name}" class="public-slider" data-filename="${file.name}">
-                            <label for="public-${file.name}" class="slider-label">
-                                <span class="slider-text">Private</span>
-                            </label>
-                        </div>
-                        <button class="file-action copy-link-btn" data-filename="${file.name}" title="Copy Link" disabled>
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <div class="file-buttons">
-                        <button class="file-action download-btn" data-filename="${file.name}" title="Download">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button class="file-action danger delete-btn" data-filename="${file.name}" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                <div class="file-buttons">
+                    <button class="file-action download-btn" data-filename="${file.name}" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="file-action danger delete-btn" data-filename="${file.name}" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
         `;
+        
+        return fileDiv;
     }
 
     getFileIcon(filename) {
+        // Проверяем кэш
+        if (this.iconCache.has(filename)) {
+            return this.iconCache.get(filename);
+        }
+        
         const ext = filename.split('.').pop().toLowerCase();
         
         const iconMap = {
@@ -637,7 +699,12 @@ class xCloudStorage {
             'json': { icon: 'fas fa-file-code', class: 'code' },
         };
         
-        return iconMap[ext] || { icon: 'fas fa-file', class: 'default' };
+        const result = iconMap[ext] || { icon: 'fas fa-file', class: 'default' };
+        
+        // Сохраняем в кэш
+        this.iconCache.set(filename, result);
+        
+        return result;
     }
 
     isArchiveFile(filename) {
@@ -646,17 +713,41 @@ class xCloudStorage {
     }
 
     formatFileSize(bytes) {
+        // Проверяем кэш
+        if (this.sizeCache.has(bytes)) {
+            return this.sizeCache.get(bytes);
+        }
+        
         if (bytes === 0) return '0 B';
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        const result = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        
+        // Сохраняем в кэш
+        this.sizeCache.set(bytes, result);
+        
+        return result;
     }
 
     updateStats() {
         const totalFiles = this.files.length;
         const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
         const lastUpdate = new Date().toLocaleTimeString('ru-RU');
+
+        // Проверяем кэш статистики
+        const cacheKey = `${totalFiles}-${totalSize}`;
+        if (this.statsCache && this.statsCache.key === cacheKey) {
+            return; // Статистика не изменилась
+        }
+
+        // Обновляем кэш
+        this.statsCache = {
+            key: cacheKey,
+            totalFiles,
+            totalSize,
+            lastUpdate
+        };
 
         document.getElementById('totalFiles').textContent = totalFiles;
         document.getElementById('totalSize').textContent = this.formatFileSize(totalSize);
@@ -667,6 +758,12 @@ class xCloudStorage {
         const breadcrumb = document.getElementById('breadcrumb');
         const folderParts = this.currentFolder ? this.currentFolder.split('/') : [];
         
+        // Проверяем кэш breadcrumb
+        const cacheKey = this.currentFolder;
+        if (this.breadcrumbCache && this.breadcrumbCache.key === cacheKey) {
+            return; // Breadcrumb не изменился
+        }
+        
         let html = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
         
         let currentPath = '';
@@ -674,6 +771,12 @@ class xCloudStorage {
             currentPath += (currentPath ? '/' : '') + part;
             html += `<button class="breadcrumb-item" data-folder="${currentPath}"><i class="fas fa-folder"></i><span>${part}</span></button>`;
         });
+        
+        // Обновляем кэш
+        this.breadcrumbCache = {
+            key: cacheKey,
+            html: html
+        };
         
         breadcrumb.innerHTML = html;
     }
@@ -829,8 +932,15 @@ class xCloudStorage {
     }
 
     async loadPublicStatus() {
-        // Load public status for all files
-        for (const file of this.files) {
+        // Load public status for all files with caching
+        const promises = this.files.map(async (file) => {
+            // Проверяем кэш
+            const cacheKey = `${file.name}-${this.currentFolder}`;
+            if (this.publicStatusCache.has(cacheKey)) {
+                this.updateFilePublicStatus(file.name, this.publicStatusCache.get(cacheKey));
+                return;
+            }
+            
             try {
                 const url = this.currentFolder ? 
                     `/api/files/${encodeURIComponent(file.name)}/public-status?folder=${encodeURIComponent(this.currentFolder)}` : 
@@ -844,12 +954,17 @@ class xCloudStorage {
 
                 if (response.ok) {
                     const data = await response.json();
+                    // Сохраняем в кэш
+                    this.publicStatusCache.set(cacheKey, data.isPublic);
                     this.updateFilePublicStatus(file.name, data.isPublic);
                 }
             } catch (error) {
                 // Silent fail for public status
             }
-        }
+        });
+        
+        // Выполняем все запросы параллельно
+        await Promise.all(promises);
     }
 
     async updateFilePublicStatus(filename, isPublic) {
@@ -879,28 +994,37 @@ class xCloudStorage {
                 sliderText.textContent = isPublic ? 'Public' : 'Private';
             }
         }
+        
+        // Обновляем кэш
+        const cacheKey = `${filename}-${this.currentFolder}`;
+        this.publicStatusCache.set(cacheKey, isPublic);
     }
 
-    // ===== НОВАЯ ЛОГИКА ПОИСКА =====
+    // ===== ОПТИМИЗИРОВАННАЯ ЛОГИКА ПОИСКА =====
     
-    // 1. Поиск по тексту (работает сразу)
+    // 1. Поиск по тексту (работает сразу с debounce)
     handleTextSearch(searchTerm) {
-        console.log('🔍 Text search:', searchTerm);
         this.currentTextSearch = searchTerm;
         
-        if (searchTerm === '') {
-            this.showAllFiles();
-        } else {
-            this.filterFilesByName(searchTerm);
+        // Очищаем предыдущий таймер
+        if (this.searchTimeout) {
+            clearTimeout(this.searchTimeout);
         }
+        
+        // Устанавливаем новый таймер для debounce (300ms)
+        this.searchTimeout = setTimeout(() => {
+            if (searchTerm === '') {
+                this.showAllFiles();
+            } else {
+                this.filterFilesByName(searchTerm);
+            }
+        }, 300);
     }
     
     // 2. Поиск по дате (с кнопкой)
     handleDateSearch() {
         const dateInput = document.getElementById('dateSearchInput');
         const date = dateInput.value;
-        
-        console.log('📅 Date search:', date);
         
         if (!date) {
             this.showToast('Выберите дату для поиска', 'error');
@@ -912,13 +1036,32 @@ class xCloudStorage {
     
     // 3. Комбинированный поиск
     async searchByDate(date) {
-        console.log('🌐 Loading files by date:', date);
         this.showLoading(true);
         
         try {
             let url = `/api/files/search?date=${encodeURIComponent(date)}`;
             if (this.currentFolder) {
                 url += `&folder=${encodeURIComponent(this.currentFolder)}`;
+            }
+            
+            // Проверяем кэш поиска
+            const cacheKey = url;
+            if (this.apiCache.has(cacheKey)) {
+                const cachedData = this.apiCache.get(cacheKey);
+                this.files = cachedData.files || [];
+                this.folders = cachedData.folders || [];
+                this.renderFiles();
+                this.updateStats();
+                
+                // Применяем текстовый поиск если есть
+                if (this.currentTextSearch) {
+                    this.filterFilesByName(this.currentTextSearch);
+                }
+                
+                const dateStr = new Date(date).toLocaleDateString('ru-RU');
+                this.showToast(`Найдено ${this.files.length} файлов за ${dateStr}`, 'info');
+                this.showLoading(false);
+                return;
             }
             
             const response = await fetch(url, {
@@ -929,12 +1072,15 @@ class xCloudStorage {
                 const data = await response.json();
                 this.files = data.files || [];
                 this.folders = data.folders || [];
+                
+                // Сохраняем в кэш
+                this.apiCache.set(cacheKey, data);
+                
                 this.renderFiles();
                 this.updateStats();
                 
-                // Если есть текстовый поиск - применяем его
+                // Применяем текстовый поиск если есть
                 if (this.currentTextSearch) {
-                    console.log('🔄 Applying text filter:', this.currentTextSearch);
                     this.filterFilesByName(this.currentTextSearch);
                 }
                 
@@ -944,67 +1090,67 @@ class xCloudStorage {
                 throw new Error('Failed to search files');
             }
         } catch (error) {
-            console.error('❌ Date search error:', error);
             this.showToast('Search error: ' + error.message, 'error');
         } finally {
             this.showLoading(false);
         }
     }
     
-    // 4. Фильтрация по имени файла
+    // 4. Фильтрация по имени файла (оптимизированная)
     filterFilesByName(searchTerm) {
-        console.log('🔍 Filtering by name:', searchTerm);
         const fileItems = document.querySelectorAll('.file-item');
         const term = searchTerm.toLowerCase();
-        let visibleCount = 0;
         
-        console.log('🔍 Total items to filter:', fileItems.length);
-        
-        fileItems.forEach((item, index) => {
-            const filename = item.dataset.filename ? item.dataset.filename.toLowerCase() : '';
-            const displayNameElement = item.querySelector('.file-name');
-            const displayName = displayNameElement ? displayNameElement.textContent.toLowerCase() : '';
-            
-            const isVisible = filename.includes(term) || displayName.includes(term);
-            
-            // Debug first few items
-            if (index < 3) {
-                console.log(`🔍 Item ${index}: filename="${filename}", displayName="${displayName}", term="${term}", visible=${isVisible}`);
-            }
-            
-            if (isVisible) {
-                item.style.display = 'flex';
-                item.style.setProperty('display', 'flex', 'important');
-            } else {
-                item.style.display = 'none';
-                item.style.setProperty('display', 'none', 'important');
-            }
-            if (isVisible) visibleCount++;
+        // Используем requestAnimationFrame для плавной анимации
+        requestAnimationFrame(() => {
+            fileItems.forEach(item => {
+                const filename = item.dataset.filename ? item.dataset.filename.toLowerCase() : '';
+                const displayNameElement = item.querySelector('.file-name');
+                const displayName = displayNameElement ? displayNameElement.textContent.toLowerCase() : '';
+                
+                const isVisible = filename.includes(term) || displayName.includes(term);
+                
+                if (isVisible) {
+                    item.style.setProperty('display', 'flex', 'important');
+                } else {
+                    item.style.setProperty('display', 'none', 'important');
+                }
+            });
         });
-        
-        console.log(`📊 Found ${visibleCount} files matching "${searchTerm}"`);
-        console.log('🔍 Current display states:', Array.from(fileItems).map(item => ({
-            filename: item.dataset.filename,
-            display: item.style.display
-        })));
     }
     
-    // 5. Показать все файлы
+    // 5. Показать все файлы (оптимизированная)
     showAllFiles() {
         const fileItems = document.querySelectorAll('.file-item');
-        fileItems.forEach(item => {
-            item.style.display = 'flex';
-            item.style.setProperty('display', 'flex', 'important');
+        
+        // Используем requestAnimationFrame для плавной анимации
+        requestAnimationFrame(() => {
+            fileItems.forEach(item => {
+                item.style.setProperty('display', 'flex', 'important');
+            });
         });
     }
     
     // 6. Очистить все поиски
     clearAllSearches() {
+        // Очищаем таймер поиска
+        if (this.searchTimeout) {
+            clearTimeout(this.searchTimeout);
+        }
+        
+        // Очищаем кэши
+        this.iconCache.clear();
+        this.sizeCache.clear();
+        this.publicStatusCache.clear();
+        this.apiCache.clear();
+        this.elementCache.clear();
+        this.statsCache = null;
+        this.breadcrumbCache = null;
+        
         document.getElementById('dateSearchInput').value = '';
         document.getElementById('searchInput').value = '';
         this.currentTextSearch = '';
         this.loadFiles();
-        this.showAllFiles();
     }
 
     openUploadModal() {
@@ -1104,7 +1250,6 @@ class xCloudStorage {
     }
 
     async startUpload() {
-        // Debug: Check if modal is visible
         const modal = document.getElementById('uploadModal');
         if (!modal || !modal.classList.contains('active')) {
             this.showToast('Upload modal is not open', 'error');
@@ -1112,7 +1257,6 @@ class xCloudStorage {
         }
 
         const fileInput = document.getElementById('fileInput');
-        
         if (!fileInput) {
             this.showToast('File input not found', 'error');
             return;
@@ -1148,12 +1292,8 @@ class xCloudStorage {
                 const file = files[i];
                 const formData = new FormData();
                 formData.append('file', file);
-                console.log('Uploading to folder:', this.currentFolder);
                 if (this.currentFolder) {
                     formData.append('folder', this.currentFolder);
-                    console.log('Added folder to FormData:', this.currentFolder);
-                } else {
-                    console.log('No current folder, uploading to root');
                 }
 
                 const response = await fetch('/api/upload', {

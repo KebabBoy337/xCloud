@@ -225,9 +225,6 @@ app.get('/api/files', checkPermission('main'), async (req, res) => {
           modified: stats.mtime
         });
       } else {
-        // Debug: Log all files found
-        console.log('API /api/files - Found file:', item);
-        
         // Определяем отображаемое имя файла
         let displayName = item;
         
@@ -236,7 +233,6 @@ app.get('/api/files', checkPermission('main'), async (req, res) => {
           const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/;
           if (uuidPattern.test(item)) {
             displayName = item.replace(uuidPattern, '');
-            console.log('API /api/files - UUID file detected:', item, '-> displayName:', displayName);
           }
         }
         
@@ -380,9 +376,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   }
   
   const folder = req.body.folder || '';
-  console.log('Upload request - folder:', folder);
   const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
-  console.log('Upload destination:', folderPath);
   
   // Ensure folder exists
   fs.ensureDirSync(folderPath);
@@ -392,10 +386,6 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   const fileExt = path.extname(originalName);
   const baseName = path.basename(originalName, fileExt);
   
-  console.log('Original filename:', originalName);
-  console.log('Base name:', baseName);
-  console.log('File extension:', fileExt);
-  
   // Create tmp directory if it doesn't exist
   const tmpDir = path.join(config.STORAGE_PATH, 'tmp');
   fs.ensureDirSync(tmpDir);
@@ -403,7 +393,6 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   // Move file to tmp directory first
   const tmpPath = path.join(tmpDir, originalName);
   fs.moveSync(req.file.path, tmpPath);
-  console.log('File moved to tmp:', tmpPath);
   
   // Now check for duplicates in target directory
   let finalName = originalName;
@@ -412,21 +401,14 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   while (true) {
     const targetPath = folder ? path.join(folderPath, finalName) : path.join(config.STORAGE_PATH, finalName);
     
-    console.log('Checking if file exists in target folder:', targetPath);
-    console.log('File exists:', fs.existsSync(targetPath));
-    
     if (!fs.existsSync(targetPath)) {
-      console.log('File does not exist in target folder, using name:', finalName);
       break; // File doesn't exist in target folder, we can use this name
     }
     
     // File exists in target folder, try with index (starting from 1, not 0)
     finalName = `${baseName} (${counter})${fileExt}`;
-    console.log('File exists in target folder, trying with index:', finalName);
     counter++;
   }
-  
-  console.log('Final filename:', finalName);
   
   // Move file from tmp to correct location with final name
   const sourcePath = tmpPath;
@@ -434,9 +416,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   
   try {
     fs.moveSync(sourcePath, destinationPath);
-    console.log('File saved as:', finalName, 'in', folder || 'root');
   } catch (error) {
-    console.error('Error moving file:', error);
     return res.status(500).json({ error: 'Failed to save file' });
   }
   
@@ -546,31 +526,18 @@ app.delete('/api/folders/:foldername', checkPermission('main'), async (req, res)
       path.join(config.STORAGE_PATH, parentFolder, foldername) : 
       path.join(config.STORAGE_PATH, foldername);
     
-    console.log(`Attempting to delete folder: ${folderPath}`);
-    
     if (!fs.existsSync(folderPath)) {
-      console.log(`Folder not found: ${folderPath}`);
       return res.status(404).json({ error: 'Folder not found' });
     }
     
     const stats = await fs.stat(folderPath);
     if (!stats.isDirectory()) {
-      console.log(`Path is not a directory: ${folderPath}`);
       return res.status(400).json({ error: 'Not a folder' });
     }
     
-    // Check if folder is empty
-    const files = await fs.readdir(folderPath);
-    if (files.length > 0) {
-      console.log(`Folder is not empty, contains ${files.length} items: ${files.join(', ')}`);
-      // Still try to delete recursively
-    }
-    
     await fs.remove(folderPath);
-    console.log(`Successfully deleted folder: ${folderPath}`);
     res.json({ message: 'Folder deleted successfully' });
   } catch (error) {
-    console.error(`Error deleting folder: ${error.message}`);
     res.status(500).json({ error: 'Failed to delete folder: ' + error.message });
   }
 });
