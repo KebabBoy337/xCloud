@@ -7,6 +7,7 @@ class xCloudStorage {
         this.version = '1.5.1'; // Версия приложения
         this.selectedFiles = new Set(); // Для отслеживания выбранных файлов
         this.selectedFolders = new Set(); // Для отслеживания выбранных папок
+        this.currentTextSearch = ''; // Текущий текстовый поиск
         this.init();
     }
 
@@ -282,6 +283,8 @@ class xCloudStorage {
             searchInput.addEventListener('input', (e) => {
                 const term = e.target.value.trim();
                 console.log('🔍 Text search input:', term);
+                this.currentTextSearch = term; // Store current text search
+                
                 if (term === '') {
                     console.log('🔄 Showing all files');
                     this.showAllFiles();
@@ -892,15 +895,20 @@ class xCloudStorage {
         console.log('🔍 Filtering files with term:', searchTerm);
         const fileItems = document.querySelectorAll('.file-item');
         const term = searchTerm.toLowerCase();
+        console.log('🔍 Total file items found:', fileItems.length);
 
         let visibleCount = 0;
-        fileItems.forEach(item => {
+        fileItems.forEach((item, index) => {
             const filename = item.dataset.filename ? item.dataset.filename.toLowerCase() : '';
             const displayNameElement = item.querySelector('.file-name');
             const displayName = displayNameElement ? displayNameElement.textContent.toLowerCase() : '';
             const isVisible = filename.includes(term) || displayName.includes(term);
             item.style.display = isVisible ? 'flex' : 'none';
             if (isVisible) visibleCount++;
+            
+            if (index < 3) { // Log first 3 items for debugging
+                console.log(`🔍 Item ${index}: filename="${filename}", displayName="${displayName}", visible=${isVisible}`);
+            }
         });
         console.log(`📊 Found ${visibleCount} files matching "${searchTerm}"`);
     }
@@ -940,11 +948,9 @@ class xCloudStorage {
                 this.updateStats();
                 
                 // Apply current text search if any
-                const searchInput = document.getElementById('searchInput');
-                const currentSearchTerm = searchInput ? searchInput.value.trim() : '';
-                if (currentSearchTerm) {
-                    console.log('🔄 Applying text filter after date search:', currentSearchTerm);
-                    this.filterFiles(currentSearchTerm);
+                if (this.currentTextSearch) {
+                    console.log('🔄 Applying text filter after date search:', this.currentTextSearch);
+                    this.filterFiles(this.currentTextSearch);
                 }
                 
                 // Show search results info
@@ -980,6 +986,7 @@ class xCloudStorage {
     clearDateSearch() {
         document.getElementById('dateSearchInput').value = '';
         document.getElementById('searchInput').value = '';
+        this.currentTextSearch = ''; // Clear text search
         this.loadFiles(); // Reload all files
         this.showAllFiles(); // Show all files
     }
