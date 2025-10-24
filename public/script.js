@@ -178,6 +178,60 @@ class xCloudStorage {
             });
         }
 
+        // Bulk delete modal controls
+        const closeBulkDeleteModal = document.getElementById('closeBulkDeleteModal');
+        if (closeBulkDeleteModal) {
+            closeBulkDeleteModal.addEventListener('click', () => {
+                this.closeBulkDeleteModal();
+            });
+        }
+
+        const cancelBulkDelete = document.getElementById('cancelBulkDelete');
+        if (cancelBulkDelete) {
+            cancelBulkDelete.addEventListener('click', () => {
+                this.closeBulkDeleteModal();
+            });
+        }
+
+        const confirmBulkDelete = document.getElementById('confirmBulkDelete');
+        if (confirmBulkDelete) {
+            confirmBulkDelete.addEventListener('click', () => {
+                this.confirmBulkDelete();
+            });
+        }
+
+        // Archive name modal controls
+        const closeArchiveNameModal = document.getElementById('closeArchiveNameModal');
+        if (closeArchiveNameModal) {
+            closeArchiveNameModal.addEventListener('click', () => {
+                this.closeArchiveNameModal();
+            });
+        }
+
+        const cancelArchiveName = document.getElementById('cancelArchiveName');
+        if (cancelArchiveName) {
+            cancelArchiveName.addEventListener('click', () => {
+                this.closeArchiveNameModal();
+            });
+        }
+
+        const confirmArchiveName = document.getElementById('confirmArchiveName');
+        if (confirmArchiveName) {
+            confirmArchiveName.addEventListener('click', () => {
+                this.confirmArchiveName();
+            });
+        }
+
+        // Archive name input Enter key
+        const archiveName = document.getElementById('archiveName');
+        if (archiveName) {
+            archiveName.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.confirmArchiveName();
+                }
+            });
+        }
+
         // File input and drag & drop
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
@@ -296,7 +350,7 @@ class xCloudStorage {
                     } else if (folder) {
                         this.toggleFolderSelection(folder, isChecked);
                     }
-                } else if (e.target.closest('.folder-item') && !e.target.closest('.delete-btn')) {
+                } else if (e.target.closest('.folder-item') && !e.target.closest('.delete-btn') && !e.target.closest('.file-checkbox')) {
                     const folderName = e.target.closest('.folder-item').dataset.folder;
                     this.navigateToFolder(folderName);
                 } else if (e.target.closest('.delete-btn') && e.target.closest('.folder-item')) {
@@ -469,6 +523,11 @@ class xCloudStorage {
                 </div>
                 <div class="file-actions">
                     <div class="file-controls">
+                        ${this.isArchiveFile(displayName) ? `
+                        <button class="file-action unarchive-btn" data-filename="${file.name}" title="Extract Archive">
+                            <i class="fas fa-file-archive"></i>
+                        </button>
+                        ` : ''}
                         <div class="public-toggle">
                             <input type="checkbox" id="public-${file.name}" class="public-slider" data-filename="${file.name}">
                             <label for="public-${file.name}" class="slider-label">
@@ -478,11 +537,6 @@ class xCloudStorage {
                         <button class="file-action copy-link-btn" data-filename="${file.name}" title="Copy Link" disabled>
                             <i class="fas fa-copy"></i>
                         </button>
-                        ${this.isArchiveFile(displayName) ? `
-                        <button class="file-action unarchive-btn" data-filename="${file.name}" title="Extract Archive">
-                            <i class="fas fa-file-archive"></i>
-                        </button>
-                        ` : ''}
                     </div>
                     <div class="file-buttons">
                         <button class="file-action download-btn" data-filename="${file.name}" title="Download">
@@ -1060,6 +1114,135 @@ class xCloudStorage {
         this.pendingDelete = null;
     }
 
+    showBulkDeleteModal(fileCount, folderCount) {
+        const modal = document.getElementById('bulkDeleteModal');
+        const title = document.getElementById('bulkDeleteTitle');
+        const message = document.getElementById('bulkDeleteMessage');
+        
+        if (fileCount > 0 && folderCount > 0) {
+            title.textContent = `Delete ${fileCount} files and ${folderCount} folders?`;
+            message.textContent = `Are you sure you want to delete ${fileCount} files and ${folderCount} folders?`;
+        } else if (fileCount > 0) {
+            title.textContent = `Delete ${fileCount} files?`;
+            message.textContent = `Are you sure you want to delete ${fileCount} files?`;
+        } else if (folderCount > 0) {
+            title.textContent = `Delete ${folderCount} folders?`;
+            message.textContent = `Are you sure you want to delete ${folderCount} folders?`;
+        }
+        
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeBulkDeleteModal() {
+        document.getElementById('bulkDeleteModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    showArchiveNameModal() {
+        const modal = document.getElementById('archiveNameModal');
+        const input = document.getElementById('archiveName');
+        
+        // Generate default name with timestamp
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/[-:]/g, '-').replace('T', '_');
+        input.value = `archive_${timestamp}`;
+        
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        input.focus();
+        input.select();
+    }
+
+    closeArchiveNameModal() {
+        document.getElementById('archiveNameModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    async confirmArchiveName() {
+        const archiveName = document.getElementById('archiveName').value.trim();
+        
+        if (!archiveName) {
+            this.showToast('Enter archive name', 'error');
+            return;
+        }
+
+        this.closeArchiveNameModal();
+
+        const fileList = Array.from(this.selectedFiles);
+        const folderList = Array.from(this.selectedFolders);
+        
+        try {
+            const response = await fetch('/api/bulk-archive', {
+                method: 'POST',
+                headers: {
+                    'X-API-Key': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    files: fileList,
+                    folders: folderList,
+                    folder: this.currentFolder,
+                    archiveName: archiveName
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.showToast(`Archive "${result.archiveName}" created successfully`, 'success');
+                this.selectedFiles.clear();
+                this.selectedFolders.clear();
+                this.updateBulkActions();
+                this.loadFiles();
+            } else {
+                throw new Error('Archive creation failed');
+            }
+        } catch (error) {
+            this.showToast('Archive error: ' + error.message, 'error');
+        }
+    }
+
+    async confirmBulkDelete() {
+        this.closeBulkDeleteModal();
+        
+        const fileList = Array.from(this.selectedFiles);
+        const folderList = Array.from(this.selectedFolders);
+
+        try {
+            // Delete files
+            if (fileList.length > 0) {
+                const response = await fetch('/api/bulk-delete', {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': this.apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        files: fileList,
+                        folder: this.currentFolder
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Bulk delete failed');
+                }
+            }
+
+            // Delete folders
+            for (const folderName of folderList) {
+                await this.performFolderDelete(folderName);
+            }
+
+            this.showToast(`${fileList.length} files and ${folderList.length} folders deleted successfully`, 'success');
+            this.selectedFiles.clear();
+            this.selectedFolders.clear();
+            this.updateBulkActions();
+            this.loadFiles();
+        } catch (error) {
+            this.showToast('Bulk delete error: ' + error.message, 'error');
+        }
+    }
+
     async confirmDelete() {
         if (!this.pendingDelete) return;
 
@@ -1108,22 +1291,28 @@ class xCloudStorage {
             return;
         }
 
-        const url = this.currentFolder ? 
-            `/api/folders/${encodeURIComponent(folderName)}?parentFolder=${encodeURIComponent(this.currentFolder)}` : 
-            `/api/folders/${encodeURIComponent(folderName)}`;
-        
-        const response = await fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'X-API-Key': this.apiKey
-            }
-        });
+        try {
+            const url = this.currentFolder ? 
+                `/api/folders/${encodeURIComponent(folderName)}?parentFolder=${encodeURIComponent(this.currentFolder)}` : 
+                `/api/folders/${encodeURIComponent(folderName)}`;
+            
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-API-Key': this.apiKey
+                }
+            });
 
-        if (response.ok) {
-            this.showToast('Folder deleted', 'success');
-            this.loadFiles();
-        } else {
-            throw new Error('Delete failed');
+            if (response.ok) {
+                this.showToast('Folder deleted', 'success');
+                this.loadFiles();
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Delete failed');
+            }
+        } catch (error) {
+            this.showToast('Folder delete error: ' + error.message, 'error');
+            throw error;
         }
     }
 
@@ -1235,43 +1424,9 @@ class xCloudStorage {
 
         const fileList = Array.from(this.selectedFiles);
         const folderList = Array.from(this.selectedFolders);
-        const confirmed = confirm(`Delete ${fileList.length} files and ${folderList.length} folders? This action cannot be undone.`);
         
-        if (!confirmed) return;
-
-        try {
-            // Delete files
-            if (fileList.length > 0) {
-                const response = await fetch('/api/bulk-delete', {
-                    method: 'POST',
-                    headers: {
-                        'X-API-Key': this.apiKey,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        files: fileList,
-                        folder: this.currentFolder
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Bulk delete failed');
-                }
-            }
-
-            // Delete folders
-            for (const folderName of folderList) {
-                await this.performFolderDelete(folderName);
-            }
-
-            this.showToast(`${fileList.length} files and ${folderList.length} folders deleted successfully`, 'success');
-            this.selectedFiles.clear();
-            this.selectedFolders.clear();
-            this.updateBulkActions();
-            this.loadFiles();
-        } catch (error) {
-            this.showToast('Bulk delete error: ' + error.message, 'error');
-        }
+        // Show modal instead of confirm
+        this.showBulkDeleteModal(fileList.length, folderList.length);
     }
 
     async bulkArchive() {
@@ -1281,36 +1436,8 @@ class xCloudStorage {
             return;
         }
 
-        const fileList = Array.from(this.selectedFiles);
-        const folderList = Array.from(this.selectedFolders);
-        
-        try {
-            const response = await fetch('/api/bulk-archive', {
-                method: 'POST',
-                headers: {
-                    'X-API-Key': this.apiKey,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    files: fileList,
-                    folders: folderList,
-                    folder: this.currentFolder
-                })
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                this.showToast(`Archive "${result.archiveName}" created successfully`, 'success');
-                this.selectedFiles.clear();
-                this.selectedFolders.clear();
-                this.updateBulkActions();
-                this.loadFiles();
-            } else {
-                throw new Error('Archive creation failed');
-            }
-        } catch (error) {
-            this.showToast('Archive error: ' + error.message, 'error');
-        }
+        // Show archive name modal
+        this.showArchiveNameModal();
     }
 
     async unarchiveFile(filename) {

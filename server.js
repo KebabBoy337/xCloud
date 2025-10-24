@@ -397,19 +397,32 @@ app.delete('/api/folders/:foldername', checkPermission('main'), async (req, res)
       path.join(config.STORAGE_PATH, parentFolder, foldername) : 
       path.join(config.STORAGE_PATH, foldername);
     
+    console.log(`Attempting to delete folder: ${folderPath}`);
+    
     if (!fs.existsSync(folderPath)) {
+      console.log(`Folder not found: ${folderPath}`);
       return res.status(404).json({ error: 'Folder not found' });
     }
     
     const stats = await fs.stat(folderPath);
     if (!stats.isDirectory()) {
+      console.log(`Path is not a directory: ${folderPath}`);
       return res.status(400).json({ error: 'Not a folder' });
     }
     
+    // Check if folder is empty
+    const files = await fs.readdir(folderPath);
+    if (files.length > 0) {
+      console.log(`Folder is not empty, contains ${files.length} items: ${files.join(', ')}`);
+      // Still try to delete recursively
+    }
+    
     await fs.remove(folderPath);
+    console.log(`Successfully deleted folder: ${folderPath}`);
     res.json({ message: 'Folder deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete folder' });
+    console.error(`Error deleting folder: ${error.message}`);
+    res.status(500).json({ error: 'Failed to delete folder: ' + error.message });
   }
 });
 
@@ -508,15 +521,24 @@ app.post('/api/bulk-delete', checkPermission('main'), async (req, res) => {
 // Bulk archive files and folders
 app.post('/api/bulk-archive', checkPermission('main'), async (req, res) => {
   try {
-    const { files = [], folders = [], folder = '' } = req.body;
+    const { files = [], folders = [], folder = '', archiveName } = req.body;
     
     if ((!files || files.length === 0) && (!folders || folders.length === 0)) {
       return res.status(400).json({ error: 'Files or folders array is required' });
     }
     
     const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
-    const archiveName = `archive_${Date.now()}.zip`;
-    const archivePath = path.join(folderPath, archiveName);
+    
+    // Use custom name or generate default
+    let finalArchiveName;
+    if (archiveName && archiveName.trim()) {
+      const cleanName = archiveName.trim().replace(/[^a-zA-Z0-9а-яА-Я\s\-_]/g, '');
+      finalArchiveName = cleanName.endsWith('.zip') ? cleanName : `${cleanName}.zip`;
+    } else {
+      finalArchiveName = `archive_${Date.now()}.zip`;
+    }
+    
+    const archivePath = path.join(folderPath, finalArchiveName);
     
     // Create archive
     const output = fs.createWriteStream(archivePath);
@@ -525,7 +547,7 @@ app.post('/api/bulk-archive', checkPermission('main'), async (req, res) => {
     output.on('close', () => {
       res.json({
         message: 'Archive created successfully',
-        archiveName: archiveName,
+        archiveName: finalArchiveName,
         size: archive.pointer()
       });
     });

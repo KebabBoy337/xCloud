@@ -1051,10 +1051,6 @@ body {
         min-width: 200px;
     }
     
-    .file-item {
-        padding: 1rem;
-        flex-wrap: wrap;
-    }
     
     .file-meta {
         flex-direction: column;
@@ -1114,9 +1110,6 @@ body {
     }
 }
 
-.file-item {
-    animation: fadeIn 0.3s ease;
-}
 
 /* File Type Icons */
 .file-icon.pdf { background: linear-gradient(135deg, #ff4757, #ff3742); }
@@ -1494,37 +1487,41 @@ body {
     box-shadow: 0 4px 12px var(--accent-glow);
 }
 
-/* File item with checkbox - updated styles */
+/* File item with checkbox - glass card styles */
 .file-item {
-    padding: 1rem 2rem;
-    border-bottom: 1px solid var(--glass-border);
     display: flex;
     align-items: center;
-    gap: 1rem;
-    transition: all 0.3s ease;
-    cursor: pointer;
+    padding: 1rem;
     background: var(--glass-bg);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
-    border-radius: 0.75rem;
+    border-radius: 1rem;
     margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
     position: relative;
+    box-shadow: var(--glass-shadow);
+    cursor: pointer;
 }
 
 .file-item:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(0, 212, 255, 0.3);
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .file-item.selected {
     background: rgba(0, 212, 255, 0.1);
     border-color: var(--accent-color);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.2);
 }
 
-.file-item:last-child {
-    border-bottom: none;
+/* Archive info text */
+.archive-info {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-style: italic;
 }
 
 /* Responsive Design */

@@ -251,6 +251,61 @@
             </div>
         </div>
 
+        <!-- Bulk Delete Confirmation Modal -->
+        <div class="modal" id="bulkDeleteModal">
+            <div class="modal-content delete-modal">
+                <div class="modal-header">
+                    <div class="delete-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 id="bulkDeleteTitle">Delete Selected Items</h3>
+                    <button class="close-btn" id="closeBulkDeleteModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="bulkDeleteMessage">Are you sure you want to delete the selected items?</p>
+                    <div class="delete-warning">
+                        <i class="fas fa-info-circle"></i>
+                        <span>This action cannot be undone.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-glass" id="cancelBulkDelete">Cancel</button>
+                    <button class="btn btn-danger" id="confirmBulkDelete">
+                        <i class="fas fa-trash"></i>
+                        Delete Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Archive Name Modal -->
+        <div class="modal" id="archiveNameModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Create Archive</h3>
+                    <button class="close-btn" id="closeArchiveNameModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <label for="archiveName">Archive Name</label>
+                        <input type="text" id="archiveName" placeholder="Enter archive name" class="glass-input" value="archive">
+                    </div>
+                    <p class="archive-info">Selected items will be compressed into a ZIP archive.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-glass" id="cancelArchiveName">Cancel</button>
+                    <button class="btn btn-primary" id="confirmArchiveName">
+                        <i class="fas fa-file-archive"></i>
+                        Create Archive
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading Overlay -->
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-spinner">
