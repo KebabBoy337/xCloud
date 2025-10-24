@@ -280,7 +280,12 @@ class xCloudStorage {
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
-                this.filterFiles(e.target.value);
+                const term = e.target.value.trim();
+                if (term === '') {
+                    this.showAllFiles();
+                } else {
+                    this.filterFiles(term);
+                }
             });
         }
 
@@ -886,8 +891,16 @@ class xCloudStorage {
 
         fileItems.forEach(item => {
             const filename = item.dataset.filename.toLowerCase();
-            const isVisible = filename.includes(term);
+            const displayName = item.querySelector('.file-name')?.textContent.toLowerCase() || '';
+            const isVisible = filename.includes(term) || displayName.includes(term);
             item.style.display = isVisible ? 'flex' : 'none';
+        });
+    }
+
+    showAllFiles() {
+        const fileItems = document.querySelectorAll('.file-item');
+        fileItems.forEach(item => {
+            item.style.display = 'flex';
         });
     }
 
@@ -942,7 +955,9 @@ class xCloudStorage {
 
     clearDateSearch() {
         document.getElementById('dateSearchInput').value = '';
+        document.getElementById('searchInput').value = '';
         this.loadFiles(); // Reload all files
+        this.showAllFiles(); // Show all files
     }
 
     openUploadModal() {
