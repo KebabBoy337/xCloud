@@ -320,8 +320,6 @@ class xCloudStorage {
         const fileList = document.getElementById('fileList');
         if (fileList) {
             fileList.addEventListener('click', (e) => {
-                console.log('File list click event:', e.target, e.target.closest('.delete-btn'), e.target.closest('.folder-item'));
-                
                 if (e.target.closest('.download-btn')) {
                     const filename = e.target.closest('.download-btn').dataset.filename;
                     this.downloadFile(filename);
@@ -329,18 +327,13 @@ class xCloudStorage {
                     const deleteBtn = e.target.closest('.delete-btn');
                     const filename = deleteBtn.dataset.filename;
                     const folderName = deleteBtn.dataset.folder;
-                    console.log('Delete button clicked - filename:', filename, 'folderName:', folderName);
                     
                     if (filename) {
-                        console.log('Deleting file:', filename);
                         this.deleteFile(filename);
                     } else if (folderName) {
-                        console.log('Deleting folder:', folderName);
                         e.preventDefault();
                         e.stopPropagation();
                         this.deleteFolder(folderName);
-                    } else {
-                        console.error('Neither filename nor folderName found in delete button');
                     }
                 } else if (e.target.closest('.copy-link-btn')) {
                     const filename = e.target.closest('.copy-link-btn').dataset.filename;
@@ -1107,12 +1100,10 @@ class xCloudStorage {
     }
 
     deleteFolder(folderName) {
-        console.log('deleteFolder called with:', folderName);
         this.pendingDelete = {
             type: 'folder',
             name: folderName
         };
-        console.log('pendingDelete set:', this.pendingDelete);
         this.showDeleteModal(`Delete folder "${folderName}"?`, `Are you sure you want to delete the folder "${folderName}" and all its contents?`);
     }
 
