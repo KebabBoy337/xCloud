@@ -309,47 +309,48 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   const fileExt = path.extname(originalName);
   const baseName = path.basename(originalName, fileExt);
   
-  let finalName = originalName;
-  let counter = 1;
-  
   console.log('Original filename:', originalName);
   console.log('Base name:', baseName);
   console.log('File extension:', fileExt);
   
-  // Debug: List all files in storage directory
-  try {
-    const storageFiles = fs.readdirSync(config.STORAGE_PATH);
-    console.log('Files in storage directory:', storageFiles);
-    console.log('Looking for similar files:');
-    storageFiles.forEach(file => {
-      if (file.toLowerCase().includes('files') || file.toLowerCase().includes('.zip')) {
-        console.log('Found similar file:', file);
+  // Step 1: Check if original file exists (without index)
+  const originalPath = folder ? path.join(folderPath, originalName) : path.join(config.STORAGE_PATH, originalName);
+  const originalExists = fs.existsSync(originalPath);
+  
+  console.log('Original file exists:', originalExists);
+  
+  let finalName;
+  
+  if (!originalExists) {
+    // Original file doesn't exist, use original name
+    finalName = originalName;
+    console.log('Using original name:', finalName);
+  } else {
+    // Original file exists, find highest index and add +1
+    const targetDir = folder ? folderPath : config.STORAGE_PATH;
+    const files = fs.readdirSync(targetDir);
+    
+    // Find all files with same base name and extract their indices
+    const indices = [];
+    const pattern = new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\((\\d+)\\)${fileExt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+    
+    files.forEach(file => {
+      const match = file.match(pattern);
+      if (match) {
+        indices.push(parseInt(match[1]));
       }
     });
-  } catch (error) {
-    console.log('Error reading storage directory:', error.message);
+    
+    // Find highest index and add 1
+    const highestIndex = indices.length > 0 ? Math.max(...indices) : 0;
+    const nextIndex = highestIndex + 1;
+    
+    finalName = `${baseName} (${nextIndex})${fileExt}`;
+    console.log('Found indices:', indices);
+    console.log('Highest index:', highestIndex);
+    console.log('Next index:', nextIndex);
+    console.log('Final name:', finalName);
   }
-  
-  // Check for duplicates and add index if needed
-  // Only check for duplicates in the target folder, not globally
-  while (true) {
-    const targetPath = folder ? path.join(folderPath, finalName) : path.join(config.STORAGE_PATH, finalName);
-    
-    console.log('Checking if file exists in target folder:', targetPath);
-    console.log('File exists:', fs.existsSync(targetPath));
-    
-    if (!fs.existsSync(targetPath)) {
-      console.log('File does not exist in target folder, using name:', finalName);
-      break; // File doesn't exist in target folder, we can use this name
-    }
-    
-    // File exists in target folder, try with index (starting from 1, not 0)
-    finalName = `${baseName} (${counter})${fileExt}`;
-    console.log('File exists in target folder, trying with index:', finalName);
-    counter++;
-  }
-  
-  console.log('Final filename:', finalName);
   
   // Move file to correct location with final name
   const sourcePath = req.file.path;
