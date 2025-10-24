@@ -1,8 +1,6 @@
-# xCloud Storage
+# xCloud Storage v1.0.3 Stable
 
 Modern file storage with beautiful glass interface, folder support, and public links.
-
-**Version:** 1.0.3 Stable
 
 ## 🚀 Features
 
@@ -19,7 +17,7 @@ Modern file storage with beautiful glass interface, folder support, and public l
 - **Main Key**: Full rights (upload, download, delete, view list)
 - **Upload Key**: Upload files only
 
-> ⚠️ **Important**: Change API keys in `config.js` before production deployment!
+> ⚠️ **Important**: Change API keys in `Important_files/prod.env` before production deployment!
 
 ## 📦 Quick Start
 
@@ -36,8 +34,15 @@ npm run dev
 npm start
 ```
 
-### Ubuntu Deployment (No PM2)
+### Ubuntu Deployment
 
+#### Option 1: Unified Manager (Recommended)
+```bash
+# Run the unified management script
+./xcloud.sh
+```
+
+#### Option 2: Direct Deployment
 ```bash
 # Run automatic deployment script
 sudo ./deploy.sh
@@ -45,11 +50,36 @@ sudo ./deploy.sh
 
 After deployment, the application will be available at `https://cloud.l0.mom`
 
-**Key Features:**
-- **No PM2** - Direct Node.js execution via systemd
-- **Automatic SSL** - Let's Encrypt certificates via Certbot
-- **Environment-based config** - Uses `.env` files for configuration
-- **Systemd service** - Automatic startup and restart
+## 📊 Management
+
+### Unified Manager (Recommended)
+
+Use the unified management script for all operations:
+
+```bash
+./xcloud.sh
+```
+
+**Available Operations:**
+- 🚀 **Deploy** - Initial deployment
+- 🔄 **Update** - Update from GitHub
+- 🧹 **Cleanup** - Complete removal
+- 🔄 **Restart** - Restart service (reload env)
+- 📊 **Logs** - View service logs
+- ⚙️ **Edit Config** - Edit prod.env
+- 📈 **Status** - Check service status
+- 🛑 **Stop** - Stop service
+- ▶️ **Start** - Start service
+
+### Manual Commands
+
+```bash
+sudo systemctl start xcloud     # Start service
+sudo systemctl stop xcloud      # Stop service
+sudo systemctl restart xcloud   # Restart service
+sudo systemctl status xcloud    # Service status
+sudo journalctl -u xcloud -f    # View logs
+```
 
 ## 🛠 API Endpoints
 
@@ -73,19 +103,19 @@ After deployment, the application will be available at `https://cloud.l0.mom`
 ### System
 - `GET /api/health` - Health check (no auth required)
 
-> 📖 **Full API Documentation**: See [API.md](API.md) for complete endpoint details
-
 ## 🔧 Configuration
 
 ### Environment Variables
 
-Copy `example.env` to `prod.env` and configure your settings:
+Copy `example.env` to `Important_files/prod.env` and configure your settings:
 
 ```bash
-cp example.env prod.env
+mkdir -p Important_files
+cp example.env Important_files/prod.env
+nano Important_files/prod.env
 ```
 
-Edit `prod.env`:
+Edit `Important_files/prod.env`:
 
 ```env
 # API Keys (CHANGE THESE!)
@@ -110,15 +140,8 @@ xCloud/
 ├── server.js              # Main server
 ├── config.js              # Configuration
 ├── package.json           # Dependencies
-├── ecosystem.config.js    # PM2 configuration
-├── deploy.sh              # Deployment script
-├── update.sh              # Update script
-├── cleanup.sh             # Cleanup script
+├── xcloud.sh              # Unified management script
 ├── example.env            # Environment template
-├── prod.env               # Production environment (not in git)
-├── API.md                 # API documentation
-├── README.md              # This file
-├── USAGE.md               # Usage guide
 ├── public/                # Static files
 │   ├── index.html         # Main page
 │   ├── style.css          # Styles
@@ -148,28 +171,7 @@ xCloud/
 
 ## 📊 Monitoring
 
-After deployment, management commands are available:
-
-```bash
-xcloud start     # Start service
-xcloud stop      # Stop service
-xcloud restart   # Restart service
-xcloud status    # Service status
-xcloud logs      # View logs
-```
-
-
-## 🚀 Performance
-
-- **PM2** - Node.js process management
-- **Nginx** - Reverse proxy and static files
-- **Optimization** - Compression, caching, rate limiting
-- **Monitoring** - Logging and metrics
-
-## 📝 Logs
-
 Logs are available in the following locations:
-- PM2 logs: `pm2 logs xcloud-storage`
 - Systemd logs: `journalctl -u xcloud -f`
 - Nginx logs: `/var/log/nginx/`
 
@@ -196,7 +198,7 @@ This script will:
 cd /opt/xcloud
 sudo -u xcloud git pull
 sudo -u xcloud npm install --production
-sudo -u xcloud pm2 restart xcloud-storage
+sudo systemctl restart xcloud
 ```
 
 ## 🧹 Complete Cleanup
@@ -209,19 +211,66 @@ sudo ./cleanup.sh
 ```
 
 This will remove:
-- All PM2 processes and configurations
-- Systemd service and files
+- All systemd services and files
 - Application directory and storage files
 - Log files and temporary files
-- Cron jobs and environment variables
 - Node.js modules and symlinks
+- xcloud user account
 
 ⚠️ **Warning**: This will permanently delete all files and configurations!
 
 ## 📞 Support
 
 If you encounter problems, check:
-1. Service status: `xcloud status`
-2. Logs: `xcloud logs`
+1. Service status: `sudo systemctl status xcloud`
+2. Logs: `sudo journalctl -u xcloud -f`
 3. Nginx configuration: `sudo nginx -t`
 4. Port availability: `sudo netstat -tlnp | grep :3000`
+
+## 📝 API Examples
+
+### Upload a file to a folder
+```bash
+curl -X POST \
+  -H "X-API-Key: your-api-key" \
+  -F "file=@document.pdf" \
+  -F "folder=documents" \
+  https://your-domain.com/api/upload
+```
+
+### Create a folder
+```bash
+curl -X POST \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "documents"}' \
+  https://your-domain.com/api/folders
+```
+
+### Make a file public
+```bash
+curl -X POST \
+  -H "X-API-Key: your-api-key" \
+  https://your-domain.com/api/files/document.pdf/make-public
+```
+
+### Download a public file
+```bash
+curl -O https://your-domain.com/documents/document.pdf
+```
+
+## 🚀 Performance
+
+- **Systemd** - Node.js process management
+- **Nginx** - Reverse proxy and static files
+- **Optimization** - Compression, caching, rate limiting
+- **Monitoring** - Logging and metrics
+
+## 📈 Version History
+
+- **1.0.3 Stable** - Clickable logo, version update, code cleanup, improved folder display, unified UI
+- **1.0.233** - Code cleanup, improved folder display, unified UI
+- **1.0.232** - Fixed folder styling and delete modal
+- **1.0.231** - Added public link management
+- **1.0.230** - Added folder support
+- **1.0.228** - Initial release
