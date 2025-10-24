@@ -304,7 +304,9 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   }
   
   const folder = req.body.folder || '';
+  console.log('Upload request - folder:', folder);
   const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
+  console.log('Upload destination:', folderPath);
   
   // Ensure folder exists
   fs.ensureDirSync(folderPath);

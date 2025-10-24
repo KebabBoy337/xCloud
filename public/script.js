@@ -997,8 +997,12 @@ class xCloudStorage {
                 const file = files[i];
                 const formData = new FormData();
                 formData.append('file', file);
+                console.log('Uploading to folder:', this.currentFolder);
                 if (this.currentFolder) {
                     formData.append('folder', this.currentFolder);
+                    console.log('Added folder to FormData:', this.currentFolder);
+                } else {
+                    console.log('No current folder, uploading to root');
                 }
 
                 const response = await fetch('/api/upload', {
