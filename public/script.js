@@ -146,6 +146,28 @@ class xCloudStorage {
             });
         }
 
+        // Delete modal controls
+        const closeDeleteModal = document.getElementById('closeDeleteModal');
+        if (closeDeleteModal) {
+            closeDeleteModal.addEventListener('click', () => {
+                this.closeDeleteModal();
+            });
+        }
+
+        const cancelDelete = document.getElementById('cancelDelete');
+        if (cancelDelete) {
+            cancelDelete.addEventListener('click', () => {
+                this.closeDeleteModal();
+            });
+        }
+
+        const confirmDelete = document.getElementById('confirmDelete');
+        if (confirmDelete) {
+            confirmDelete.addEventListener('click', () => {
+                this.confirmDelete();
+            });
+        }
+
         // File input and drag & drop
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
@@ -229,7 +251,7 @@ class xCloudStorage {
                     } else {
                         this.makeFilePrivate(filename);
                     }
-                } else if (e.target.closest('.folder-item')) {
+                } else if (e.target.closest('.folder-item') && !e.target.closest('.folder-delete-btn')) {
                     const folderName = e.target.closest('.folder-item').dataset.folder;
                     this.navigateToFolder(folderName);
                 } else if (e.target.closest('.folder-delete-btn')) {
@@ -556,33 +578,6 @@ class xCloudStorage {
         }
     }
 
-    async deleteFolder(folderName) {
-        if (!confirm(`Delete folder "${folderName}"?`)) {
-            return;
-        }
-
-        try {
-            const url = this.currentFolder ? 
-                `/api/folders/${encodeURIComponent(folderName)}?parentFolder=${encodeURIComponent(this.currentFolder)}` : 
-                `/api/folders/${encodeURIComponent(folderName)}`;
-            
-            const response = await fetch(url, {
-                method: 'DELETE',
-                headers: {
-                    'X-API-Key': this.apiKey
-                }
-            });
-
-            if (response.ok) {
-                this.showToast('Folder deleted', 'success');
-                this.loadFiles();
-            } else {
-                throw new Error('Delete failed');
-            }
-        } catch (error) {
-            this.showToast('Delete error: ' + error.message, 'error');
-        }
-    }
 
     async makeFilePublic(filename) {
         try {
@@ -965,36 +960,99 @@ class xCloudStorage {
         }
     }
 
-    async deleteFile(filename) {
+    deleteFile(filename) {
+        this.pendingDelete = {
+            type: 'file',
+            name: filename
+        };
+        this.showDeleteModal(`Delete file "${filename}"?`, `Are you sure you want to delete the file "${filename}"?`);
+    }
+
+    deleteFolder(folderName) {
+        this.pendingDelete = {
+            type: 'folder',
+            name: folderName
+        };
+        this.showDeleteModal(`Delete folder "${folderName}"?`, `Are you sure you want to delete the folder "${folderName}" and all its contents?`);
+    }
+
+    showDeleteModal(title, message) {
+        document.getElementById('deleteTitle').textContent = title;
+        document.getElementById('deleteMessage').textContent = message;
+        document.getElementById('deleteModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('active');
+        document.body.style.overflow = '';
+        this.pendingDelete = null;
+    }
+
+    async confirmDelete() {
+        if (!this.pendingDelete) return;
+
+        const { type, name } = this.pendingDelete;
+        this.closeDeleteModal();
+
+        try {
+            if (type === 'file') {
+                await this.performFileDelete(name);
+            } else if (type === 'folder') {
+                await this.performFolderDelete(name);
+            }
+        } catch (error) {
+            this.showToast('Delete error: ' + error.message, 'error');
+        }
+    }
+
+    async performFileDelete(filename) {
         if (!this.apiKey) {
             this.showToast('Please login first', 'error');
             return;
         }
 
-        if (!confirm(`Delete file "${filename}"?`)) {
+        const url = this.currentFolder ? 
+            `/api/files/${encodeURIComponent(filename)}?folder=${encodeURIComponent(this.currentFolder)}` : 
+            `/api/files/${encodeURIComponent(filename)}`;
+        
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-API-Key': this.apiKey
+            }
+        });
+
+        if (response.ok) {
+            this.showToast('File deleted', 'success');
+            this.loadFiles();
+        } else {
+            throw new Error('Delete failed');
+        }
+    }
+
+    async performFolderDelete(folderName) {
+        if (!this.apiKey) {
+            this.showToast('Please login first', 'error');
             return;
         }
 
-        try {
-            const url = this.currentFolder ? 
-                `/api/files/${filename}?folder=${encodeURIComponent(this.currentFolder)}` : 
-                `/api/files/${filename}`;
-            
-            const response = await fetch(url, {
-                method: 'DELETE',
-                headers: {
-                    'X-API-Key': this.apiKey
-                }
-            });
-
-            if (response.ok) {
-                this.showToast('File deleted', 'success');
-                this.loadFiles();
-            } else {
-                throw new Error('Delete failed');
+        const url = this.currentFolder ? 
+            `/api/folders/${encodeURIComponent(folderName)}?parentFolder=${encodeURIComponent(this.currentFolder)}` : 
+            `/api/folders/${encodeURIComponent(folderName)}`;
+        
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-API-Key': this.apiKey
             }
-        } catch (error) {
-            this.showToast('Delete error: ' + error.message, 'error');
+        });
+
+        if (response.ok) {
+            this.showToast('Folder deleted', 'success');
+            this.loadFiles();
+        } else {
+            throw new Error('Delete failed');
         }
     }
 

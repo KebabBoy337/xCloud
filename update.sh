@@ -104,7 +104,10 @@ fi
 # ВАЖНО: Папка /opt/xcloud/storage содержит файлы пользователей - НЕ УДАЛЯЕМ!
 print_status "Защищаем папку storage с файлами пользователей"
 
-# Очищаем директорию (кроме node_modules, storage и prod.env)
+# ВАЖНО: Папка /opt/xcloud/Important_files содержит настройки - НЕ УДАЛЯЕМ!
+print_status "Защищаем папку Important_files с настройками"
+
+# Очищаем директорию (кроме node_modules, storage, Important_files и prod.env)
 print_status "Очистка /opt/xcloud..."
 find /opt/xcloud -maxdepth 1 -type f -name "*.js" -delete
 find /opt/xcloud -maxdepth 1 -type f -name "*.json" -delete
@@ -113,10 +116,11 @@ find /opt/xcloud -maxdepth 1 -type f -name "*.sh" -delete
 find /opt/xcloud -maxdepth 1 -type f -name "example.env" -delete
 rm -rf /opt/xcloud/public
 # НЕ удаляем storage - там файлы пользователей!
+# НЕ удаляем Important_files - там настройки!
 
-# Копируем новые файлы, исключая storage
-print_status "Копирование файлов (исключая storage)..."
-rsync -av --exclude='storage' --exclude='node_modules' "$SOURCE_DIR"/ /opt/xcloud/
+# Копируем новые файлы, исключая storage и Important_files
+print_status "Копирование файлов (исключая storage и Important_files)..."
+rsync -av --exclude='storage' --exclude='Important_files' --exclude='node_modules' "$SOURCE_DIR"/ /opt/xcloud/
 
 # Восстанавливаем важные файлы
 if [ -f "/tmp/prod.env.backup" ]; then
@@ -136,6 +140,20 @@ else
         print_status "Найдено $file_count файлов в storage - защищены от удаления"
     else
         print_status "Папка storage пуста"
+    fi
+fi
+
+# Создаем папку Important_files если её нет
+if [ ! -d "/opt/xcloud/Important_files" ]; then
+    mkdir -p /opt/xcloud/Important_files
+    print_status "Создана папка Important_files"
+else
+    # Проверяем, есть ли файлы в Important_files
+    file_count=$(find /opt/xcloud/Important_files -type f | wc -l)
+    if [ "$file_count" -gt 0 ]; then
+        print_status "Найдено $file_count файлов в Important_files - защищены от удаления"
+    else
+        print_status "Папка Important_files пуста"
     fi
 fi
 
