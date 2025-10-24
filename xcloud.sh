@@ -45,7 +45,7 @@ show_menu() {
     echo "3. 🧹 Complete Cleanup"
     echo "4. 🔄 Restart Service (reload env)"
     echo "5. 📊 View Logs"
-    echo "6. ⚙️  Edit prod.env"
+    echo "6. ⚙️  Edit prod.env (auto-restart)"
     echo "7. 📈 Service Status"
     echo "8. 🛑 Stop Service"
     echo "9. ▶️  Start Service"
@@ -683,7 +683,22 @@ edit_prod_env() {
     read -p "Press Enter to edit the file..." 
     sudo nano "$env_file"
     
-    print_info "File edited. Don't forget to restart the service!"
+    print_info "File edited. Restarting service to apply changes..."
+    
+    # Auto-restart service
+    print_status "Restarting xCloud service..."
+    systemctl stop xcloud 2>/dev/null || print_warning "Service was not running"
+    systemctl start xcloud
+    
+    sleep 3
+    
+    if systemctl is-active --quiet xcloud; then
+        print_success "✅ xCloud service restarted successfully with new configuration!"
+        print_info "🌐 Application: https://cloud.l0.mom"
+    else
+        print_error "❌ Failed to restart xCloud service!"
+        print_info "📝 Check logs: journalctl -u xcloud -f"
+    fi
 }
 
 # Function to check service status
