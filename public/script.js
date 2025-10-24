@@ -791,7 +791,15 @@ class xCloudStorage {
     }
 
     navigateToFolder(folderName) {
-        this.currentFolder = folderName;
+        // Если это навигация из breadcrumb - используем переданный путь
+        // Если это навигация из папки - добавляем к текущему пути
+        if (folderName === '') {
+            this.currentFolder = '';
+        } else if (this.currentFolder === '') {
+            this.currentFolder = folderName;
+        } else {
+            this.currentFolder = this.currentFolder + '/' + folderName;
+        }
         this.loadFiles(true); // Принудительное обновление при навигации
     }
 
