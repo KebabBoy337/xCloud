@@ -4,7 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.0.3'; // Версия приложения
+        this.version = '1.0.4'; // Версия приложения
         this.selectedFiles = new Set(); // Для отслеживания выбранных файлов
         this.selectedFolders = new Set(); // Для отслеживания выбранных папок
         this.init();

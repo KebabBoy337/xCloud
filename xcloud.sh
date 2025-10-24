@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# xCloud Storage Manager v1.0.3 Stable
+# xCloud Storage Manager v1.0.4 BETA
 # Unified management script for xCloud Storage
 
-echo "🚀 xCloud Storage Manager v1.0.3 Stable"
+echo "🚀 xCloud Storage Manager v1.0.4 BETA"
 echo "========================================"
 
 # Colors for output
