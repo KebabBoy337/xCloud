@@ -1503,19 +1503,13 @@ body {
     cursor: pointer;
 }
 
-/* Debug: Add outline to see if styles are applied */
-.file-item::before {
-    content: "FILE-ITEM-STYLES-APPLIED";
-    position: absolute;
-    top: -20px;
-    left: 0;
-    font-size: 10px;
-    color: red;
-    background: yellow;
-    padding: 2px;
-    z-index: 1000;
-    display: block; /* Set to block to debug */
+/* Force override any conflicting styles */
+.file-item[class*="file-item"] {
+    background: #1a1a1a !important;
+    border: 1px solid #2a2a2a !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
 }
+
 
 .file-item:hover {
     background: #2a2a2a !important; /* Slightly lighter on hover */
@@ -1581,4 +1575,17 @@ body {
         flex-wrap: wrap;
         gap: 0.5rem;
     }
+}
+
+/* Force file-item styles to be applied last - override any conflicting styles */
+.file-item {
+    background: #1a1a1a !important;
+    border: 1px solid #2a2a2a !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+.file-item:hover {
+    background: #2a2a2a !important;
+    border-color: #3a3a3a !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6) !important;
 }
