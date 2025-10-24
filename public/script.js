@@ -939,6 +939,14 @@ class xCloudStorage {
                 this.renderFiles();
                 this.updateStats();
                 
+                // Apply current text search if any
+                const searchInput = document.getElementById('searchInput');
+                const currentSearchTerm = searchInput ? searchInput.value.trim() : '';
+                if (currentSearchTerm) {
+                    console.log('🔄 Applying text filter after date search:', currentSearchTerm);
+                    this.filterFiles(currentSearchTerm);
+                }
+                
                 // Show search results info
                 const dateStr = new Date(date).toLocaleDateString('ru-RU');
                 this.showToast(`Найдено ${this.files.length} файлов за ${dateStr}`, 'info');
@@ -955,84 +963,19 @@ class xCloudStorage {
 
     performDateSearch() {
         const dateInput = document.getElementById('dateSearchInput');
-        const searchInput = document.getElementById('searchInput');
         const date = dateInput.value;
-        const searchTerm = searchInput.value.trim();
         
-        console.log('🔍 Date search triggered:', { date, searchTerm });
+        console.log('🔍 Date search triggered:', { date });
         
         if (!date) {
             this.showToast('Выберите дату для поиска', 'error');
             return;
         }
         
-        // If there's a search term, we need to combine both searches
-        if (searchTerm) {
-            console.log('🔄 Combining date and name search');
-            this.searchFilesByDateAndName(date, searchTerm);
-        } else {
-            console.log('📅 Date-only search');
-            this.searchFilesByDate(date);
-        }
+        console.log('📅 Date-only search');
+        this.searchFilesByDate(date);
     }
 
-    async searchFilesByDateAndName(date, searchTerm) {
-        console.log('🔍 Combined search:', { date, searchTerm });
-        if (!this.apiKey) return;
-
-        this.showLoading(true);
-
-        try {
-            // First get files by date
-            let url = `/api/files/search?date=${encodeURIComponent(date)}`;
-            if (this.currentFolder) {
-                url += `&folder=${encodeURIComponent(this.currentFolder)}`;
-            }
-            
-            console.log('🌐 Combined API URL:', url);
-            const response = await fetch(url, {
-                headers: {
-                    'X-API-Key': this.apiKey
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log('📊 Date search results:', data);
-                
-                // Filter by name on client side
-                console.log('🔍 Files before filtering:', data.files.map(f => ({ name: f.name, displayName: f.displayName })));
-                console.log('🔍 Search term:', searchTerm.toLowerCase());
-                
-                const filteredFiles = data.files.filter(file => {
-                    const filename = file.name ? file.name.toLowerCase() : '';
-                    const displayName = file.displayName ? file.displayName.toLowerCase() : (file.name ? file.name.toLowerCase() : '');
-                    const matchesFilename = filename.includes(searchTerm.toLowerCase());
-                    const matchesDisplayName = displayName.includes(searchTerm.toLowerCase());
-                    console.log(`🔍 File "${file.name}": filename="${filename}", displayName="${displayName}", matchesFilename=${matchesFilename}, matchesDisplayName=${matchesDisplayName}`);
-                    return matchesFilename || matchesDisplayName;
-                });
-                
-                console.log('🔍 After name filtering:', filteredFiles);
-                
-                this.files = filteredFiles;
-                this.folders = data.folders || [];
-                this.renderFiles();
-                this.updateStats();
-                
-                // Show search results info
-                const dateStr = new Date(date).toLocaleDateString('ru-RU');
-                this.showToast(`Найдено ${filteredFiles.length} файлов с "${searchTerm}" за ${dateStr}`, 'info');
-            } else {
-                throw new Error('Failed to search files');
-            }
-        } catch (error) {
-            console.error('❌ Combined search error:', error);
-            this.showToast('Search error: ' + error.message, 'error');
-        } finally {
-            this.showLoading(false);
-        }
-    }
 
     clearDateSearch() {
         document.getElementById('dateSearchInput').value = '';
