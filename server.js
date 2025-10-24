@@ -106,11 +106,15 @@ app.use(express.static('public', {
   }
 }));
 
-// Auth check middleware for all routes except login
+// Health check (before auth middleware)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Auth check middleware for all routes except login and health
 app.use((req, res, next) => {
-  // Allow access to login page, health check, and static files
+  // Allow access to login page and static files
   if (req.path === '/' || 
-      req.path === '/api/health' || 
       req.path.startsWith('/public/') ||
       req.path.startsWith('/style.css') ||
       req.path.startsWith('/script.js') ||
@@ -127,13 +131,6 @@ app.use((req, res, next) => {
   
   // Check if user is authenticated
   const apiKey = req.headers['x-api-key'] || req.query.api_key;
-  
-  // Debug logging for API key issues
-  if (req.path === '/api/health') {
-    console.log('Health check request - API key:', apiKey);
-    console.log('Expected MAIN_API_KEY:', config.MAIN_API_KEY);
-    console.log('Expected UPLOAD_API_KEY:', config.UPLOAD_API_KEY);
-  }
   
   if (!apiKey) {
     if (req.path.startsWith('/api/')) {
@@ -368,10 +365,6 @@ app.delete('/api/folders/:foldername', checkPermission('main'), async (req, res)
 });
 
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
 
 // Start server
 app.listen(config.PORT, () => {
