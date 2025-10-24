@@ -158,6 +158,16 @@
                                 <input type="text" id="searchInput" placeholder="Search files..." class="glass-input">
                                 <i class="fas fa-search"></i>
                             </div>
+                            <div class="date-search-box">
+                                <input type="date" id="dateSearchInput" class="glass-input" title="Search by date">
+                                <input type="number" id="hourSearchInput" class="glass-input" placeholder="Hour (0-23)" min="0" max="23" title="Search by hour">
+                                <button class="btn btn-glass" id="searchByDateBtn" title="Search by date">
+                                    <i class="fas fa-calendar"></i>
+                                </button>
+                                <button class="btn btn-glass" id="clearSearchBtn" title="Clear search">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -322,12 +332,12 @@
         
         <!-- Version Info -->
         <div class="version-info">
-            <span>v1.4.3 STABLE</span>
+            <span>v1.5.0 STABLE</span>
         </div>
     </div>
 
-    <script src="script.js?v=1.4.3"></script>
-    <script src="init.js?v=1.4.3"></script>
+    <script src="script.js?v=1.5.0"></script>
+    <script src="init.js?v=1.5.0"></script>
     
     <!-- Fallback JavaScript for Ubuntu deployment -->
     <script>

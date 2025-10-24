@@ -246,6 +246,7 @@ app.get('/api/files', checkPermission('main'), async (req, res) => {
           size: stats.size,
           created: stats.birthtime,
           modified: stats.mtime,
+          uploadTime: stats.birthtime, // Время загрузки (используем birthtime как время создания файла)
           type: 'file'
         });
       }
@@ -258,6 +259,91 @@ app.get('/api/files', checkPermission('main'), async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to read files' });
+  }
+});
+
+// Search files by date/time
+app.get('/api/files/search', checkPermission('main'), async (req, res) => {
+  try {
+    const { date, hour, folder = '' } = req.query;
+    
+    if (!date) {
+      return res.status(400).json({ error: 'Date parameter is required' });
+    }
+    
+    const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
+    
+    if (!fs.existsSync(folderPath)) {
+      return res.json({ files: [], folders: [] });
+    }
+    
+    const items = await fs.readdir(folderPath);
+    const fileList = [];
+    const folderList = [];
+    
+    // Parse date filter
+    const filterDate = new Date(date);
+    const startOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+    
+    for (const item of items) {
+      if (item === 'tmp') continue;
+      
+      const itemPath = path.join(folderPath, item);
+      const stats = await fs.stat(itemPath);
+      
+      if (stats.isDirectory()) {
+        folderList.push({
+          name: item,
+          type: 'folder',
+          created: stats.birthtime,
+          modified: stats.mtime
+        });
+      } else {
+        const uploadTime = stats.birthtime;
+        
+        // Check if file was uploaded on the specified date
+        const isOnDate = uploadTime >= startOfDay && uploadTime < endOfDay;
+        
+        // If hour is specified, check hour as well
+        let isOnHour = true;
+        if (hour !== undefined) {
+          const fileHour = uploadTime.getHours();
+          isOnHour = fileHour === parseInt(hour);
+        }
+        
+        if (isOnDate && isOnHour) {
+          // Determine display name
+          let displayName = item;
+          if (item.includes('-') && item.length > 36) {
+            const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/;
+            if (uuidPattern.test(item)) {
+              displayName = item.replace(uuidPattern, '');
+            }
+          }
+          
+          fileList.push({
+            name: item,
+            displayName: displayName,
+            size: stats.size,
+            created: stats.birthtime,
+            modified: stats.mtime,
+            uploadTime: stats.birthtime,
+            type: 'file'
+          });
+        }
+      }
+    }
+    
+    res.json({ 
+      files: fileList, 
+      folders: folderList,
+      currentFolder: folder,
+      searchDate: date,
+      searchHour: hour
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to search files' });
   }
 });
 

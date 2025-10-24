@@ -4,7 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.4.3'; // Версия приложения
+        this.version = '1.5.0'; // Версия приложения
         this.selectedFiles = new Set(); // Для отслеживания выбранных файлов
         this.selectedFolders = new Set(); // Для отслеживания выбранных папок
         this.init();
@@ -284,6 +284,39 @@ class xCloudStorage {
             });
         }
 
+        // Date search functionality
+        const searchByDateBtn = document.getElementById('searchByDateBtn');
+        if (searchByDateBtn) {
+            searchByDateBtn.addEventListener('click', () => {
+                this.performDateSearch();
+            });
+        }
+
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                this.clearDateSearch();
+            });
+        }
+
+        // Date search input Enter key
+        const dateSearchInput = document.getElementById('dateSearchInput');
+        const hourSearchInput = document.getElementById('hourSearchInput');
+        if (dateSearchInput) {
+            dateSearchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.performDateSearch();
+                }
+            });
+        }
+        if (hourSearchInput) {
+            hourSearchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.performDateSearch();
+                }
+            });
+        }
+
         // Bulk action buttons
         const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
         if (bulkDeleteBtn) {
@@ -517,6 +550,7 @@ class xCloudStorage {
         const fileIcon = this.getFileIcon(displayName);
         const fileSize = this.formatFileSize(file.size);
         const createdDate = new Date(file.created).toLocaleDateString('ru-RU');
+        const uploadTime = file.uploadTime ? new Date(file.uploadTime).toLocaleString('ru-RU') : createdDate;
         
         return `
             <div class="file-item" data-filename="${file.name}">
@@ -533,6 +567,7 @@ class xCloudStorage {
                         <span>${fileSize}</span>
                         <span>${createdDate}</span>
                     </div>
+                    <div class="file-upload-time">Загружен: ${uploadTime}</div>
                 </div>
                 <div class="file-actions">
                     <div class="file-controls">
@@ -865,6 +900,74 @@ class xCloudStorage {
             const isVisible = filename.includes(term);
             item.style.display = isVisible ? 'flex' : 'none';
         });
+    }
+
+    async searchFilesByDate(date, hour = null) {
+        if (!this.apiKey) return;
+
+        this.showLoading(true);
+
+        try {
+            let url = `/api/files/search?date=${encodeURIComponent(date)}`;
+            if (hour !== null) {
+                url += `&hour=${hour}`;
+            }
+            if (this.currentFolder) {
+                url += `&folder=${encodeURIComponent(this.currentFolder)}`;
+            }
+            
+            const response = await fetch(url, {
+                headers: {
+                    'X-API-Key': this.apiKey
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.files = data.files || [];
+                this.folders = data.folders || [];
+                this.renderFiles();
+                this.updateStats();
+                
+                // Show search results info
+                const dateStr = new Date(date).toLocaleDateString('ru-RU');
+                const hourStr = hour !== null ? ` в ${hour}:00` : '';
+                this.showToast(`Найдено ${this.files.length} файлов за ${dateStr}${hourStr}`, 'info');
+            } else {
+                throw new Error('Failed to search files');
+            }
+        } catch (error) {
+            this.showToast('Search error: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    performDateSearch() {
+        const dateInput = document.getElementById('dateSearchInput');
+        const hourInput = document.getElementById('hourSearchInput');
+        
+        const date = dateInput.value;
+        const hour = hourInput.value;
+        
+        if (!date) {
+            this.showToast('Выберите дату для поиска', 'error');
+            return;
+        }
+        
+        const hourValue = hour ? parseInt(hour) : null;
+        if (hourValue !== null && (hourValue < 0 || hourValue > 23)) {
+            this.showToast('Час должен быть от 0 до 23', 'error');
+            return;
+        }
+        
+        this.searchFilesByDate(date, hourValue);
+    }
+
+    clearDateSearch() {
+        document.getElementById('dateSearchInput').value = '';
+        document.getElementById('hourSearchInput').value = '';
+        this.loadFiles(); // Reload all files
     }
 
     openUploadModal() {

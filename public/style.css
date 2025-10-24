@@ -504,6 +504,27 @@ body {
     min-width: 250px;
 }
 
+.date-search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-search-box input {
+    min-width: 120px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.date-search-box input[type="number"] {
+    min-width: 100px;
+}
+
+.date-search-box .btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+}
+
 /* File List */
 .file-list {
     min-height: 300px;
@@ -544,6 +565,13 @@ body {
     gap: 1rem;
     color: var(--text-secondary);
     font-size: 0.85rem;
+}
+
+.file-upload-time {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    font-style: italic;
 }
 
 .file-actions {
