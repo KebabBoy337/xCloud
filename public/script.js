@@ -972,7 +972,13 @@ class xCloudStorage {
                 console.log(`🔍 Item ${index}: filename="${filename}", displayName="${displayName}", term="${term}", visible=${isVisible}`);
             }
             
-            item.style.display = isVisible ? 'flex' : 'none';
+            if (isVisible) {
+                item.style.display = 'flex';
+                item.style.setProperty('display', 'flex', 'important');
+            } else {
+                item.style.display = 'none';
+                item.style.setProperty('display', 'none', 'important');
+            }
             if (isVisible) visibleCount++;
         });
         
@@ -988,6 +994,7 @@ class xCloudStorage {
         const fileItems = document.querySelectorAll('.file-item');
         fileItems.forEach(item => {
             item.style.display = 'flex';
+            item.style.setProperty('display', 'flex', 'important');
         });
     }
     
