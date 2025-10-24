@@ -4,7 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.0.231'; // Версия приложения
+        this.version = '1.0.232'; // Версия приложения
         console.log('xCloud Storage v' + this.version + ' initialized');
         this.init();
     }
@@ -360,8 +360,17 @@ class xCloudStorage {
             return;
         }
 
-        const foldersHtml = this.folders.map(folder => this.createFolderItem(folder)).join('');
-        const filesHtml = this.files.map(file => this.createFileItem(file)).join('');
+        // Sort folders alphabetically
+        const sortedFolders = [...this.folders].sort((a, b) => a.name.localeCompare(b.name));
+        // Sort files alphabetically
+        const sortedFiles = [...this.files].sort((a, b) => {
+            const nameA = a.displayName || a.name;
+            const nameB = b.displayName || b.name;
+            return nameA.localeCompare(nameB);
+        });
+
+        const foldersHtml = sortedFolders.map(folder => this.createFolderItem(folder)).join('');
+        const filesHtml = sortedFiles.map(file => this.createFileItem(file)).join('');
         
         fileList.innerHTML = foldersHtml + filesHtml;
     }

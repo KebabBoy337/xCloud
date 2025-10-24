@@ -1176,7 +1176,7 @@ body {
     font-size: 0.8rem;
 }
 
-/* Folder Items */
+/* Folder Items - Same as File Items */
 .folder-item {
     display: flex;
     align-items: center;
@@ -1223,6 +1223,18 @@ body {
     gap: 1rem;
     font-size: 0.8rem;
     color: var(--text-secondary);
+}
+
+.folder-item .file-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.folder-item .file-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 /* Version Info */
@@ -1366,53 +1378,71 @@ body {
 
 /* Delete Modal */
 .delete-modal {
-    max-width: 400px;
+    max-width: 450px;
 }
 
 .delete-modal .modal-header {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding-bottom: 1rem;
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
     border-bottom: 1px solid var(--glass-border);
 }
 
 .delete-icon {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     background: linear-gradient(135deg, #ff4757, #ff3742);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.delete-modal .modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
     font-size: 1.2rem;
+    font-weight: 600;
 }
 
 .delete-modal .modal-body {
-    padding: 1.5rem 0;
+    padding: 1.5rem;
 }
 
 .delete-modal p {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: var(--text-primary);
     margin-bottom: 1rem;
+    line-height: 1.5;
 }
 
 .delete-warning {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem;
+    padding: 0.75rem 1rem;
     background: rgba(255, 71, 87, 0.1);
     border: 1px solid rgba(255, 71, 87, 0.3);
     border-radius: 8px;
     color: #ff4757;
     font-size: 0.9rem;
+    margin-top: 1rem;
 }
 
 .delete-warning i {
     font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.delete-modal .modal-footer {
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
 }
 
 /* Danger Button */
@@ -1436,10 +1466,20 @@ body {
     box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
 }
 
-/* Folder Delete Button */
+/* Folder Delete Button - Same as File Delete Button */
 .folder-delete-btn {
     background: var(--danger-color);
     color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
 }
 
 .folder-delete-btn:hover {
