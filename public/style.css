@@ -1236,6 +1236,18 @@ body {
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
+/* Public file link button */
+.link-btn.public {
+    background: linear-gradient(135deg, #2ed573, #1dd1a1);
+    color: white;
+}
+
+.link-btn.public:hover {
+    background: linear-gradient(135deg, #26c965, #17c08f);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(46, 213, 115, 0.4);
+}
+
 /* Folder Delete Button */
 .folder-delete-btn {
     background: var(--danger-color);

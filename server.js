@@ -53,6 +53,28 @@ app.use('/api/', limiter);
 // Ensure storage directory exists
 fs.ensureDirSync(config.STORAGE_PATH);
 
+// Public links storage
+const PUBLIC_LINKS_FILE = path.join(config.STORAGE_PATH, '.public_links.json');
+
+// Load public links
+let publicLinks = {};
+try {
+  if (fs.existsSync(PUBLIC_LINKS_FILE)) {
+    publicLinks = JSON.parse(fs.readFileSync(PUBLIC_LINKS_FILE, 'utf8'));
+  }
+} catch (error) {
+  console.log('No public links file found, starting fresh');
+}
+
+// Save public links
+const savePublicLinks = () => {
+  try {
+    fs.writeFileSync(PUBLIC_LINKS_FILE, JSON.stringify(publicLinks, null, 2));
+  } catch (error) {
+    console.error('Failed to save public links:', error);
+  }
+};
+
 // Multer configuration for file uploads with folder support
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -296,9 +318,20 @@ app.get('/api/download/:filename', checkPermission('main'), (req, res) => {
 });
 
 // Permanent link for file download (no auth required)
+// Only works for files that have been explicitly made public
 app.get('/:folder/:filename', (req, res) => {
   const { folder, filename } = req.params;
-  const filePath = path.join(config.STORAGE_PATH, folder, filename);
+  // Decode URL-encoded filename
+  const decodedFolder = decodeURIComponent(folder);
+  const decodedFilename = decodeURIComponent(filename);
+  const fileKey = `${decodedFolder}/${decodedFilename}`;
+  
+  // Check if file is public
+  if (!publicLinks[fileKey]) {
+    return res.status(403).json({ error: 'File is private' });
+  }
+  
+  const filePath = path.join(config.STORAGE_PATH, decodedFolder, decodedFilename);
   
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'File not found' });
@@ -308,9 +341,19 @@ app.get('/:folder/:filename', (req, res) => {
 });
 
 // Permanent link for root files
+// Only works for files that have been explicitly made public
 app.get('/:filename', (req, res) => {
   const { filename } = req.params;
-  const filePath = path.join(config.STORAGE_PATH, filename);
+  // Decode URL-encoded filename
+  const decodedFilename = decodeURIComponent(filename);
+  const fileKey = decodedFilename;
+  
+  // Check if file is public
+  if (!publicLinks[fileKey]) {
+    return res.status(403).json({ error: 'File is private' });
+  }
+  
+  const filePath = path.join(config.STORAGE_PATH, decodedFilename);
   
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'File not found' });
@@ -362,6 +405,62 @@ app.delete('/api/folders/:foldername', checkPermission('main'), async (req, res)
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete folder' });
   }
+});
+
+// Make file public (create permanent link)
+app.post('/api/files/:filename/make-public', checkPermission('main'), (req, res) => {
+  const filename = req.params.filename;
+  const folder = req.query.folder || '';
+  const fileKey = folder ? `${folder}/${filename}` : filename;
+  
+  // Check if file exists
+  const filePath = folder ? 
+    path.join(config.STORAGE_PATH, folder, filename) : 
+    path.join(config.STORAGE_PATH, filename);
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+  
+  // Add to public links
+  publicLinks[fileKey] = {
+    filename: filename,
+    folder: folder,
+    created: new Date().toISOString()
+  };
+  
+  savePublicLinks();
+  
+  res.json({ 
+    message: 'File made public',
+    publicLink: folder ? `/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}` : `/${encodeURIComponent(filename)}`
+  });
+});
+
+// Make file private (remove permanent link)
+app.post('/api/files/:filename/make-private', checkPermission('main'), (req, res) => {
+  const filename = req.params.filename;
+  const folder = req.query.folder || '';
+  const fileKey = folder ? `${folder}/${filename}` : filename;
+  
+  // Remove from public links
+  if (publicLinks[fileKey]) {
+    delete publicLinks[fileKey];
+    savePublicLinks();
+    res.json({ message: 'File made private' });
+  } else {
+    res.json({ message: 'File was already private' });
+  }
+});
+
+// Check if file is public
+app.get('/api/files/:filename/public-status', checkPermission('main'), (req, res) => {
+  const filename = req.params.filename;
+  const folder = req.query.folder || '';
+  const fileKey = folder ? `${folder}/${filename}` : filename;
+  
+  const isPublic = !!publicLinks[fileKey];
+  res.json({ isPublic, publicLink: isPublic ? (folder ? `/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}` : `/${encodeURIComponent(filename)}`) : null });
 });
 
 

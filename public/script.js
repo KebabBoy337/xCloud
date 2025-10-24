@@ -4,7 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.0.229'; // Версия приложения
+        this.version = '1.0.230'; // Версия приложения
         console.log('xCloud Storage v' + this.version + ' initialized');
         this.init();
     }
@@ -220,7 +220,12 @@ class xCloudStorage {
                     this.deleteFile(filename);
                 } else if (e.target.closest('.link-btn')) {
                     const filename = e.target.closest('.link-btn').dataset.filename;
-                    this.createPermanentLink(filename);
+                    const linkBtn = e.target.closest('.link-btn');
+                    if (linkBtn.classList.contains('public')) {
+                        this.makeFilePrivate(filename);
+                    } else {
+                        this.createPermanentLink(filename);
+                    }
                 } else if (e.target.closest('.folder-item')) {
                     const folderName = e.target.closest('.folder-item').dataset.folder;
                     this.navigateToFolder(folderName);
@@ -304,6 +309,7 @@ class xCloudStorage {
                 this.renderFiles();
                 this.updateBreadcrumb();
                 this.updateStats();
+                this.loadPublicStatus();
             } else {
                 throw new Error('Failed to load files');
             }
@@ -563,23 +569,106 @@ class xCloudStorage {
         }
     }
 
-    createPermanentLink(filename) {
-        const baseUrl = window.location.origin;
-        let link;
-        
-        if (this.currentFolder) {
-            link = `${baseUrl}/${this.currentFolder}/${filename}`;
-        } else {
-            link = `${baseUrl}/${filename}`;
+    async createPermanentLink(filename) {
+        try {
+            // Make file public first
+            const url = this.currentFolder ? 
+                `/api/files/${encodeURIComponent(filename)}/make-public?folder=${encodeURIComponent(this.currentFolder)}` : 
+                `/api/files/${encodeURIComponent(filename)}/make-public`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-API-Key': this.apiKey
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const baseUrl = window.location.origin;
+                const link = `${baseUrl}${result.publicLink}`;
+                
+                // Copy to clipboard
+                navigator.clipboard.writeText(link).then(() => {
+                    this.showToast('Permanent link created and copied to clipboard', 'success');
+                }).catch(() => {
+                    // Fallback: show in prompt
+                    prompt('Permanent link (copy this):', link);
+                });
+                
+                // Update the UI to show that file is now public
+                this.updateFilePublicStatus(filename, true);
+            } else {
+                throw new Error('Failed to make file public');
+            }
+        } catch (error) {
+            this.showToast('Error creating permanent link: ' + error.message, 'error');
         }
-        
-        // Copy to clipboard
-        navigator.clipboard.writeText(link).then(() => {
-            this.showToast('Permanent link copied to clipboard', 'success');
-        }).catch(() => {
-            // Fallback: show in prompt
-            prompt('Permanent link (copy this):', link);
-        });
+    }
+
+    async makeFilePrivate(filename) {
+        try {
+            const url = this.currentFolder ? 
+                `/api/files/${encodeURIComponent(filename)}/make-private?folder=${encodeURIComponent(this.currentFolder)}` : 
+                `/api/files/${encodeURIComponent(filename)}/make-private`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-API-Key': this.apiKey
+                }
+            });
+
+            if (response.ok) {
+                this.showToast('File made private', 'success');
+                this.updateFilePublicStatus(filename, false);
+            } else {
+                throw new Error('Failed to make file private');
+            }
+        } catch (error) {
+            this.showToast('Error making file private: ' + error.message, 'error');
+        }
+    }
+
+    async loadPublicStatus() {
+        // Load public status for all files
+        for (const file of this.files) {
+            try {
+                const url = this.currentFolder ? 
+                    `/api/files/${encodeURIComponent(file.name)}/public-status?folder=${encodeURIComponent(this.currentFolder)}` : 
+                    `/api/files/${encodeURIComponent(file.name)}/public-status`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'X-API-Key': this.apiKey
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.updateFilePublicStatus(file.name, data.isPublic);
+                }
+            } catch (error) {
+                console.log('Failed to load public status for', file.name);
+            }
+        }
+    }
+
+    async updateFilePublicStatus(filename, isPublic) {
+        // Update the link button appearance based on public status
+        const fileItem = document.querySelector(`[data-filename="${filename}"]`);
+        if (fileItem) {
+            const linkBtn = fileItem.querySelector('.link-btn');
+            if (linkBtn) {
+                if (isPublic) {
+                    linkBtn.classList.add('public');
+                    linkBtn.title = 'File is public - click to make private';
+                } else {
+                    linkBtn.classList.remove('public');
+                    linkBtn.title = 'Create Permanent Link';
+                }
+            }
+        }
     }
 
     filterFiles(searchTerm) {
