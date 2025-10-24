@@ -122,14 +122,8 @@ deploy_xcloud() {
         print_warning "ℹ️  prod.env already exists in Important_files"
     fi
     
-    # Create symlink to prod.env
-    print_status "🔗 Creating symlink to prod.env..."
-    if [ ! -f "/opt/xcloud/prod.env" ]; then
-        ln -s /opt/xcloud/Important_files/prod.env /opt/xcloud/prod.env
-        print_success "✅ Symlink created: /opt/xcloud/prod.env -> Important_files/prod.env"
-    else
-        print_warning "ℹ️  Symlink already exists"
-    fi
+    # Note: No symlink needed - config.js reads directly from Important_files/prod.env
+    print_status "ℹ️  Using Important_files/prod.env directly (no symlink needed)"
     
     # Create systemd service
     print_status "⚙️ Creating systemd service..."
@@ -345,11 +339,8 @@ update_xcloud() {
         print_status "Restored .public_links.json"
     fi
     
-    # Create symlink to prod.env if it doesn't exist
-    if [ ! -f "/opt/xcloud/prod.env" ] && [ -f "/opt/xcloud/Important_files/prod.env" ]; then
-        ln -s /opt/xcloud/Important_files/prod.env /opt/xcloud/prod.env
-        print_status "Created symlink to prod.env"
-    fi
+    # Note: No symlink needed - config.js reads directly from Important_files/prod.env
+    print_status "ℹ️  Using Important_files/prod.env directly (no symlink needed)"
     
     # Create storage directory if it doesn't exist
     if [ ! -d "/opt/xcloud/storage" ]; then
@@ -485,7 +476,7 @@ cleanup_xcloud() {
         # Remove any remaining processes
         print_status "Killing any remaining xCloud processes..."
         pkill -f "node.*server.js" 2>/dev/null || true
-        pkill -f "xcloud" 2>/dev/null || true
+        # Note: Not killing 'xcloud' processes to avoid killing this script
         print_status "Process cleanup completed"
         
         # Remove log files
@@ -547,8 +538,6 @@ cleanup_xcloud() {
         rm -f /usr/local/bin/xcloud 2>/dev/null || true
         rm -f /usr/bin/xcloud 2>/dev/null || true
         rm -f /usr/local/bin/xcloud-ssl 2>/dev/null || true
-        # Remove symlink to prod.env if exists
-        rm -f /opt/xcloud/prod.env 2>/dev/null || true
         print_status "Symlinks removed"
         
         # Remove xcloud user (if created)
