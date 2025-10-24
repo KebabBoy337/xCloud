@@ -102,10 +102,8 @@ const savePublicLinks = () => {
 // Multer configuration for file uploads with folder support
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const folder = req.body.folder || '';
-    const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
-    fs.ensureDirSync(folderPath);
-    cb(null, folderPath);
+    // Use temp directory first, we'll move the file later
+    cb(null, config.STORAGE_PATH);
   },
   filename: (req, file, cb) => {
     // Получаем имя файла без расширения и расширение отдельно
@@ -310,6 +308,20 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   
   // Ensure folder exists
   fs.ensureDirSync(folderPath);
+  
+  // Move file to correct folder if needed
+  if (folder) {
+    const sourcePath = req.file.path;
+    const destinationPath = path.join(folderPath, req.file.filename);
+    
+    try {
+      fs.moveSync(sourcePath, destinationPath);
+      console.log('File moved from', sourcePath, 'to', destinationPath);
+    } catch (error) {
+      console.error('Error moving file:', error);
+      return res.status(500).json({ error: 'Failed to move file to folder' });
+    }
+  }
   
   res.json({
     message: 'File uploaded successfully',
