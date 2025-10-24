@@ -30,8 +30,8 @@ app.use(helmet({
 }));
 
 app.use(cors());
-app.use(express.json({ limit: '500mb' })); // Принудительно 500MB
-app.use(express.urlencoded({ extended: true, limit: '500mb' })); // Принудительно 500MB
+app.use(express.json({ limit: '500mb' })); // Force 500MB limit
+app.use(express.urlencoded({ extended: true, limit: '500mb' })); // Force 500MB limit
 
 // Fix Cross-Origin and Origin-Agent-Cluster headers
 app.use((req, res, next) => {
@@ -114,7 +114,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 500 * 1024 * 1024 // 500MB - принудительно установлен лимит
+    fileSize: 500 * 1024 * 1024 // 500MB - force limit set
   }
 });
 
@@ -225,10 +225,10 @@ app.get('/api/files', checkPermission('main'), async (req, res) => {
           modified: stats.mtime
         });
       } else {
-        // Определяем отображаемое имя файла
+        // Determine display file name
         let displayName = item;
         
-        // Если файл имеет старое имя с UUID, извлекаем оригинальное имя
+        // If file has old UUID name, extract original name
         if (item.includes('-') && item.length > 36) {
           const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/;
           if (uuidPattern.test(item)) {
@@ -237,12 +237,12 @@ app.get('/api/files', checkPermission('main'), async (req, res) => {
         }
         
         fileList.push({
-          name: item, // Реальное имя файла для скачивания
-          displayName: displayName, // Отображаемое имя
+          name: item, // Real file name for download
+          displayName: displayName, // Display name
           size: stats.size,
           created: stats.birthtime,
           modified: stats.mtime,
-          uploadTime: stats.birthtime, // Время загрузки (используем birthtime как время создания файла)
+          uploadTime: stats.birthtime, // Upload time (using birthtime as file creation time)
           type: 'file'
         });
       }

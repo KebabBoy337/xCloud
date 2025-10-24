@@ -4,18 +4,18 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.5.1'; // Версия приложения
-        this.selectedFiles = new Set(); // Для отслеживания выбранных файлов
-        this.selectedFolders = new Set(); // Для отслеживания выбранных папок
-        this.currentTextSearch = ''; // Текущий текстовый поиск
-        this.iconCache = new Map(); // Кэш для иконок файлов
-        this.sizeCache = new Map(); // Кэш для размеров файлов
-        this.searchTimeout = null; // Таймер для debounce поиска
-        this.statsCache = null; // Кэш для статистики
-        this.breadcrumbCache = null; // Кэш для breadcrumb
-        this.publicStatusCache = new Map(); // Кэш для публичного статуса файлов
-        this.apiCache = new Map(); // Кэш для API ответов
-        this.elementCache = new Map(); // Кэш для DOM элементов
+        this.version = '1.5.1'; // Application version
+        this.selectedFiles = new Set(); // Track selected files
+        this.selectedFolders = new Set(); // Track selected folders
+        this.currentTextSearch = ''; // Current text search
+        this.iconCache = new Map(); // Cache for file icons
+        this.sizeCache = new Map(); // Cache for file sizes
+        this.searchTimeout = null; // Timer for search debounce
+        this.statsCache = null; // Cache for statistics
+        this.breadcrumbCache = null; // Cache for breadcrumb
+        this.publicStatusCache = new Map(); // Cache for public file status
+        this.apiCache = new Map(); // Cache for API responses
+        this.elementCache = new Map(); // Cache for DOM elements
         this.init();
     }
 
@@ -28,7 +28,7 @@ class xCloudStorage {
         const stored = localStorage.getItem('xcloud_api_key');
         if (stored && stored.trim() !== '') {
             this.apiKey = stored;
-            // Проверяем, что API ключ действительно работает
+            // Check if API key actually works
             this.verifyApiKey(stored);
         } else {
             this.showLoginScreen();
@@ -47,12 +47,12 @@ class xCloudStorage {
                 this.showMainContent();
                 this.loadFiles();
             } else {
-                // API ключ не работает, очищаем localStorage
+                // API key doesn't work, clear localStorage
                 localStorage.removeItem('xcloud_api_key');
                 this.showLoginScreen();
             }
         } catch (error) {
-            // Ошибка сети, очищаем localStorage
+            // Network error, clear localStorage
             localStorage.removeItem('xcloud_api_key');
             this.showLoginScreen();
         }
@@ -97,7 +97,7 @@ class xCloudStorage {
         const refreshBtn = document.getElementById('refreshBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
-                this.loadFiles(true); // Принудительное обновление
+                this.loadFiles(true); // Force refresh
             });
         }
 
@@ -246,9 +246,9 @@ class xCloudStorage {
         const fileInput = document.getElementById('fileInput');
 
         if (uploadArea && fileInput) {
-            // Только клик по uploadArea открывает проводник
+            // Only click on uploadArea opens file explorer
             uploadArea.addEventListener('click', (e) => {
-                // Проверяем, что клик не по самому fileInput
+                // Check that click is not on fileInput itself
                 if (e.target !== fileInput) {
                     fileInput.click();
                 }
@@ -357,11 +357,11 @@ class xCloudStorage {
             });
         }
 
-        // File actions (download/delete/link) - use event delegation (оптимизированные)
+        // File actions (download/delete/link) - use event delegation (optimized)
         const fileList = document.getElementById('fileList');
         if (fileList) {
             fileList.addEventListener('click', (e) => {
-                // Кэшируем элементы для лучшей производительности
+                // Cache elements for better performance
                 const downloadBtn = e.target.closest('.download-btn');
                 const deleteBtn = e.target.closest('.delete-btn');
                 const copyBtn = e.target.closest('.copy-link-btn');
@@ -415,7 +415,7 @@ class xCloudStorage {
             });
         }
 
-        // Breadcrumb navigation (оптимизированная)
+        // Breadcrumb navigation (optimized)
         const breadcrumb = document.getElementById('breadcrumb');
         if (breadcrumb) {
             breadcrumb.addEventListener('click', (e) => {
@@ -446,18 +446,18 @@ class xCloudStorage {
             });
 
             if (response.ok) {
-                // Сохраняем API ключ только если он работает
+                // Save API key only if it works
                 localStorage.setItem('xcloud_api_key', this.apiKey);
                 this.showToast('Login successful', 'success');
                 this.showMainContent();
                 this.loadFiles();
             } else {
-                // Очищаем localStorage при неверном ключе
+                // Clear localStorage on invalid key
                 localStorage.removeItem('xcloud_api_key');
                 throw new Error('Invalid API key');
             }
         } catch (error) {
-            // Очищаем localStorage при ошибке
+            // Clear localStorage on error
             localStorage.removeItem('xcloud_api_key');
             this.showToast('Login error: ' + error.message, 'error');
         }
@@ -473,7 +473,7 @@ class xCloudStorage {
                 `/api/files?folder=${encodeURIComponent(this.currentFolder)}` : 
                 '/api/files';
             
-            // Проверяем кэш API только если не принудительное обновление
+            // Check API cache only if not force refresh
             const cacheKey = url;
             if (!forceRefresh && this.apiCache.has(cacheKey)) {
                 const cachedData = this.apiCache.get(cacheKey);
@@ -500,7 +500,7 @@ class xCloudStorage {
                 this.folders = data.folders || [];
                 this.currentFolder = data.currentFolder || '';
                 
-                // Сохраняем в кэш
+                // Save to cache
                 this.apiCache.set(cacheKey, data);
                 
                 this.renderFiles();
@@ -647,7 +647,7 @@ class xCloudStorage {
     }
 
     getFileIcon(filename) {
-        // Проверяем кэш
+        // Check cache
         if (this.iconCache.has(filename)) {
             return this.iconCache.get(filename);
         }
@@ -701,7 +701,7 @@ class xCloudStorage {
         
         const result = iconMap[ext] || { icon: 'fas fa-file', class: 'default' };
         
-        // Сохраняем в кэш
+        // Save to cache
         this.iconCache.set(filename, result);
         
         return result;
@@ -713,7 +713,7 @@ class xCloudStorage {
     }
 
     formatFileSize(bytes) {
-        // Проверяем кэш
+        // Check cache
         if (this.sizeCache.has(bytes)) {
             return this.sizeCache.get(bytes);
         }
@@ -724,7 +724,7 @@ class xCloudStorage {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         const result = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         
-        // Сохраняем в кэш
+        // Save to cache
         this.sizeCache.set(bytes, result);
         
         return result;
@@ -735,13 +735,13 @@ class xCloudStorage {
         const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
         const lastUpdate = new Date().toLocaleTimeString('ru-RU');
 
-        // Проверяем кэш статистики
+        // Check statistics cache
         const cacheKey = `${totalFiles}-${totalSize}`;
         if (this.statsCache && this.statsCache.key === cacheKey) {
-            return; // Статистика не изменилась
+            return; // Statistics haven't changed
         }
 
-        // Обновляем кэш
+        // Update cache
         this.statsCache = {
             key: cacheKey,
             totalFiles,
@@ -758,22 +758,22 @@ class xCloudStorage {
         const breadcrumb = document.getElementById('breadcrumb');
         const folderParts = this.currentFolder ? this.currentFolder.split('/') : [];
         
-        // Проверяем кэш breadcrumb
+        // Check cache breadcrumb
         const cacheKey = this.currentFolder;
         if (this.breadcrumbCache && this.breadcrumbCache.key === cacheKey) {
-            return; // Breadcrumb не изменился
+            return; // Breadcrumb hasn't changed
         }
         
         let html = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
         
-        // Ограничиваем глубину до 5 папок
+        // Limit depth to 5 folders
         const maxDepth = 5;
         
-        // Если больше 5 папок - показываем только Root
+        // If more than 5 folders - show only Root
         if (folderParts.length > maxDepth) {
             html = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
         } else {
-            // Показываем путь до 5 папок
+            // Show path up to 5 folders
             let currentPath = '';
             folderParts.forEach((part, index) => {
                 currentPath += (currentPath ? '/' : '') + part;
@@ -781,7 +781,7 @@ class xCloudStorage {
             });
         }
         
-        // Обновляем кэш
+        // Update cache
         this.breadcrumbCache = {
             key: cacheKey,
             html: html
@@ -791,8 +791,8 @@ class xCloudStorage {
     }
 
     navigateToFolder(folderName) {
-        // Если это навигация из breadcrumb - используем переданный путь
-        // Если это навигация из папки - добавляем к текущему пути
+        // If this is navigation from breadcrumb - use passed path
+        // If this is navigation from folder - add to current path
         if (folderName === '') {
             this.currentFolder = '';
         } else if (this.currentFolder === '') {
@@ -800,12 +800,12 @@ class xCloudStorage {
         } else {
             this.currentFolder = this.currentFolder + '/' + folderName;
         }
-        this.loadFiles(true); // Принудительное обновление при навигации
+        this.loadFiles(true); // Force refresh on navigation
     }
 
     navigateToHome() {
         this.currentFolder = '';
-        this.loadFiles(true); // Принудительное обновление при навигации
+        this.loadFiles(true); // Force refresh on navigation
     }
 
     openCreateFolderModal() {
@@ -852,7 +852,7 @@ class xCloudStorage {
             if (response.ok) {
                 this.showToast('Folder created successfully', 'success');
                 this.closeCreateFolderModal();
-                this.loadFiles(true); // Принудительное обновление после создания
+                this.loadFiles(true); // Force refresh after creation
             } else {
                 const error = await response.json();
                 throw new Error(error.error || 'Failed to create folder');
@@ -951,7 +951,7 @@ class xCloudStorage {
     async loadPublicStatus() {
         // Load public status for all files with caching
         const promises = this.files.map(async (file) => {
-            // Проверяем кэш
+            // Check cache
             const cacheKey = `${file.name}-${this.currentFolder}`;
             if (this.publicStatusCache.has(cacheKey)) {
                 this.updateFilePublicStatus(file.name, this.publicStatusCache.get(cacheKey));
@@ -971,7 +971,7 @@ class xCloudStorage {
 
                 if (response.ok) {
                     const data = await response.json();
-                    // Сохраняем в кэш
+                    // Save to cache
                     this.publicStatusCache.set(cacheKey, data.isPublic);
                     this.updateFilePublicStatus(file.name, data.isPublic);
                 }
@@ -980,7 +980,7 @@ class xCloudStorage {
             }
         });
         
-        // Выполняем все запросы параллельно
+        // Execute all requests in parallel
         await Promise.all(promises);
     }
 
@@ -1012,12 +1012,12 @@ class xCloudStorage {
             }
         }
         
-        // Обновляем кэш
+        // Update cache
         const cacheKey = `${filename}-${this.currentFolder}`;
         this.publicStatusCache.set(cacheKey, isPublic);
     }
 
-    // ===== ОПТИМИЗИРОВАННАЯ ЛОГИКА ПОИСКА =====
+    // ===== OPTIMIZED SEARCH LOGIC =====
     
     // 1. Поиск по тексту (работает сразу с debounce)
     handleTextSearch(searchTerm) {
@@ -1061,7 +1061,7 @@ class xCloudStorage {
                 url += `&folder=${encodeURIComponent(this.currentFolder)}`;
             }
             
-            // Проверяем кэш поиска
+            // Check cache поиска
             const cacheKey = url;
             if (this.apiCache.has(cacheKey)) {
                 const cachedData = this.apiCache.get(cacheKey);
@@ -1090,7 +1090,7 @@ class xCloudStorage {
                 this.files = data.files || [];
                 this.folders = data.folders || [];
                 
-                // Сохраняем в кэш
+                // Save to cache
                 this.apiCache.set(cacheKey, data);
                 
                 this.renderFiles();
@@ -1511,7 +1511,7 @@ class xCloudStorage {
                 this.selectedFiles.clear();
                 this.selectedFolders.clear();
                 this.updateBulkActions();
-                this.loadFiles(true); // Принудительное обновление после создания архива
+                this.loadFiles(true); // Force refresh after creation архива
             } else {
                 throw new Error('Archive creation failed');
             }
@@ -1623,7 +1623,7 @@ class xCloudStorage {
 
             if (response.ok) {
                 this.showToast('Folder deleted', 'success');
-                this.loadFiles(true); // Принудительное обновление после удаления
+                this.loadFiles(true); // Force refresh после удаления
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || 'Delete failed');
@@ -1818,7 +1818,7 @@ class xCloudStorage {
 
             if (response.ok) {
                 this.showToast(`Archive "${filename}" extracted successfully`, 'success');
-                this.loadFiles(true); // Принудительное обновление после извлечения
+                this.loadFiles(true); // Force refresh после извлечения
             } else {
                 throw new Error('Extraction failed');
             }
@@ -1852,7 +1852,7 @@ class xCloudStorage {
                 this.showToast(`${fileList.length} files extracted successfully`, 'success');
                 this.selectedFiles.clear();
                 this.updateBulkActions();
-                this.loadFiles(true); // Принудительное обновление после массового извлечения
+                this.loadFiles(true); // Force refresh после массового извлечения
             } else {
                 throw new Error('Extraction failed');
             }
