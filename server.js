@@ -128,6 +128,13 @@ app.use((req, res, next) => {
   // Check if user is authenticated
   const apiKey = req.headers['x-api-key'] || req.query.api_key;
   
+  // Debug logging for API key issues
+  if (req.path === '/api/health') {
+    console.log('Health check request - API key:', apiKey);
+    console.log('Expected MAIN_API_KEY:', config.MAIN_API_KEY);
+    console.log('Expected UPLOAD_API_KEY:', config.UPLOAD_API_KEY);
+  }
+  
   if (!apiKey) {
     if (req.path.startsWith('/api/')) {
       return res.status(401).json({ error: 'API key required' });
