@@ -357,10 +357,15 @@ class xCloudStorage {
                     const folderName = e.target.closest('.folder-item').dataset.folder;
                     this.navigateToFolder(folderName);
                 } else if (e.target.closest('.delete-btn') && e.target.closest('.folder-item')) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const deleteBtn = e.target.closest('.delete-btn');
                     const folderName = deleteBtn.dataset.folder;
+                    console.log('Delete folder clicked:', folderName); // Debug
                     if (folderName) {
                         this.deleteFolder(folderName);
+                    } else {
+                        console.error('Folder name is undefined');
                     }
                 }
             });

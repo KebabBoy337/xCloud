@@ -175,6 +175,30 @@ EOF
     # Enable Nginx site
     ln -sf /etc/nginx/sites-available/xcloud /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
+    
+    # Configure Nginx for large file uploads (1GB limit)
+    print_status "📁 Configuring Nginx for large file uploads..."
+    tee /etc/nginx/conf.d/upload.conf > /dev/null <<EOF
+# Increase client max body size to 1GB
+client_max_body_size 1G;
+
+# Increase buffer sizes for large uploads
+client_body_buffer_size 128k;
+client_header_buffer_size 1k;
+large_client_header_buffers 4 4k;
+
+# Increase timeouts for large uploads
+client_body_timeout 60s;
+client_header_timeout 60s;
+send_timeout 60s;
+
+# Increase proxy timeouts
+proxy_connect_timeout 60s;
+proxy_send_timeout 60s;
+proxy_read_timeout 60s;
+EOF
+    
+    # Test and restart nginx with new configuration
     nginx -t && systemctl restart nginx
     
     # Start service

@@ -1488,27 +1488,26 @@ body {
     box-shadow: 0 4px 12px var(--accent-glow);
 }
 
-/* File item with checkbox - glass card styles like screenshot */
+/* File item with checkbox - dark gray card styles like second screenshot */
 .file-item {
     display: flex !important;
     align-items: center;
     padding: 1rem 1.5rem;
-    background: rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: #2a2a2a !important;
+    border: 1px solid #3a3a3a !important;
     border-radius: 0.75rem !important;
     margin-bottom: 0.75rem;
     transition: all 0.3s ease;
     position: relative;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
     cursor: pointer;
 }
 
 .file-item:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border-color: rgba(0, 212, 255, 0.4) !important;
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3) !important;
+    background: #3a3a3a !important;
+    border-color: #4a4a4a !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
 .file-item.selected {
