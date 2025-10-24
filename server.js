@@ -316,6 +316,20 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   console.log('Base name:', baseName);
   console.log('File extension:', fileExt);
   
+  // Debug: List all files in storage directory
+  try {
+    const storageFiles = fs.readdirSync(config.STORAGE_PATH);
+    console.log('Files in storage directory:', storageFiles);
+    console.log('Looking for similar files:');
+    storageFiles.forEach(file => {
+      if (file.toLowerCase().includes('files') || file.toLowerCase().includes('.zip')) {
+        console.log('Found similar file:', file);
+      }
+    });
+  } catch (error) {
+    console.log('Error reading storage directory:', error.message);
+  }
+  
   // Check for duplicates and add index if needed
   // Only check for duplicates in the target folder, not globally
   while (true) {
