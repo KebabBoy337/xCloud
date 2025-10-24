@@ -918,9 +918,12 @@ class xCloudStorage {
     handleFileSelect(files) {
         if (files.length === 0) return;
 
+        // Convert FileList to Array if needed
+        const filesArray = Array.from(files);
+        
         // Store all selected files
         this.selectedFiles.clear();
-        files.forEach(file => this.selectedFiles.add(file));
+        filesArray.forEach(file => this.selectedFiles.add(file));
         
         const startUploadBtn = document.getElementById('startUpload');
         if (startUploadBtn) {
@@ -940,18 +943,18 @@ class xCloudStorage {
             const fileInfo = document.createElement('div');
             fileInfo.className = 'file-info-display';
             
-            if (files.length === 1) {
-                const file = files[0];
+            if (filesArray.length === 1) {
+                const file = filesArray[0];
                 fileInfo.innerHTML = `
                     <i class="fas fa-file"></i>
                     <h4>${file.name}</h4>
                     <p>${this.formatFileSize(file.size)}</p>
                 `;
             } else {
-                const totalSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+                const totalSize = filesArray.reduce((sum, file) => sum + file.size, 0);
                 fileInfo.innerHTML = `
                     <i class="fas fa-files"></i>
-                    <h4>${files.length} files selected</h4>
+                    <h4>${filesArray.length} files selected</h4>
                     <p>Total size: ${this.formatFileSize(totalSize)}</p>
                 `;
             }
