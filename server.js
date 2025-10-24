@@ -312,6 +312,20 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   console.log('Base name:', baseName);
   console.log('File extension:', fileExt);
   
+  // Debug: List all files in storage directory
+  try {
+    const storageFiles = fs.readdirSync(config.STORAGE_PATH);
+    console.log('Files in storage directory:', storageFiles);
+    console.log('Looking for similar files:');
+    storageFiles.forEach(file => {
+      if (file.toLowerCase().includes('screenshot') || file.toLowerCase().includes('2025-10-17')) {
+        console.log('Found similar file:', file);
+      }
+    });
+  } catch (error) {
+    console.log('Error reading storage directory:', error.message);
+  }
+  
   // Check for duplicates and add index if needed
   while (true) {
     const targetPath = folder ? path.join(folderPath, finalName) : path.join(config.STORAGE_PATH, finalName);
