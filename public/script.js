@@ -895,8 +895,9 @@ class xCloudStorage {
 
         let visibleCount = 0;
         fileItems.forEach(item => {
-            const filename = item.dataset.filename.toLowerCase();
-            const displayName = item.querySelector('.file-name')?.textContent.toLowerCase() || '';
+            const filename = item.dataset.filename ? item.dataset.filename.toLowerCase() : '';
+            const displayNameElement = item.querySelector('.file-name');
+            const displayName = displayNameElement ? displayNameElement.textContent.toLowerCase() : '';
             const isVisible = filename.includes(term) || displayName.includes(term);
             item.style.display = isVisible ? 'flex' : 'none';
             if (isVisible) visibleCount++;
@@ -1000,10 +1001,16 @@ class xCloudStorage {
                 console.log('📊 Date search results:', data);
                 
                 // Filter by name on client side
+                console.log('🔍 Files before filtering:', data.files.map(f => ({ name: f.name, displayName: f.displayName })));
+                console.log('🔍 Search term:', searchTerm.toLowerCase());
+                
                 const filteredFiles = data.files.filter(file => {
-                    const filename = file.name.toLowerCase();
-                    const displayName = (file.displayName || file.name).toLowerCase();
-                    return filename.includes(searchTerm.toLowerCase()) || displayName.includes(searchTerm.toLowerCase());
+                    const filename = file.name ? file.name.toLowerCase() : '';
+                    const displayName = file.displayName ? file.displayName.toLowerCase() : (file.name ? file.name.toLowerCase() : '');
+                    const matchesFilename = filename.includes(searchTerm.toLowerCase());
+                    const matchesDisplayName = displayName.includes(searchTerm.toLowerCase());
+                    console.log(`🔍 File "${file.name}": filename="${filename}", displayName="${displayName}", matchesFilename=${matchesFilename}, matchesDisplayName=${matchesDisplayName}`);
+                    return matchesFilename || matchesDisplayName;
                 });
                 
                 console.log('🔍 After name filtering:', filteredFiles);
