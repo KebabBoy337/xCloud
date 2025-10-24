@@ -505,13 +505,13 @@ app.post('/api/bulk-delete', checkPermission('main'), async (req, res) => {
   }
 });
 
-// Bulk archive files
+// Bulk archive files and folders
 app.post('/api/bulk-archive', checkPermission('main'), async (req, res) => {
   try {
-    const { files, folder = '' } = req.body;
+    const { files = [], folders = [], folder = '' } = req.body;
     
-    if (!files || !Array.isArray(files) || files.length === 0) {
-      return res.status(400).json({ error: 'Files array is required' });
+    if ((!files || files.length === 0) && (!folders || folders.length === 0)) {
+      return res.status(400).json({ error: 'Files or folders array is required' });
     }
     
     const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
@@ -541,6 +541,14 @@ app.post('/api/bulk-archive', checkPermission('main'), async (req, res) => {
       const filePath = path.join(folderPath, filename);
       if (fs.existsSync(filePath)) {
         archive.file(filePath, { name: filename });
+      }
+    }
+    
+    // Add folders to archive
+    for (const folderName of folders) {
+      const folderFullPath = path.join(folderPath, folderName);
+      if (fs.existsSync(folderFullPath)) {
+        archive.directory(folderFullPath, folderName);
       }
     }
     

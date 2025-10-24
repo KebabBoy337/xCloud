@@ -511,23 +511,6 @@ body {
     overflow-y: auto;
 }
 
-.file-item {
-    padding: 1rem 2rem;
-    border-bottom: 1px solid var(--glass-border);
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.file-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.file-item:last-child {
-    border-bottom: none;
-}
 
 .file-icon {
     width: 2.5rem;
@@ -1511,17 +1494,20 @@ body {
     box-shadow: 0 4px 12px var(--accent-glow);
 }
 
-/* File item with checkbox */
+/* File item with checkbox - updated styles */
 .file-item {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--glass-border);
     display: flex;
     align-items: center;
-    padding: 1rem;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
     border-radius: 0.75rem;
     margin-bottom: 0.75rem;
-    transition: all 0.3s ease;
     position: relative;
 }
 
@@ -1535,6 +1521,10 @@ body {
 .file-item.selected {
     background: rgba(0, 212, 255, 0.1);
     border-color: var(--accent-color);
+}
+
+.file-item:last-child {
+    border-bottom: none;
 }
 
 /* Responsive Design */

@@ -6,6 +6,7 @@ class xCloudStorage {
         this.currentFolder = '';
         this.version = '1.0.3'; // Версия приложения
         this.selectedFiles = new Set(); // Для отслеживания выбранных файлов
+        this.selectedFolders = new Set(); // Для отслеживания выбранных папок
         this.init();
     }
 
@@ -274,6 +275,9 @@ class xCloudStorage {
                 } else if (e.target.closest('.copy-link-btn')) {
                     const filename = e.target.closest('.copy-link-btn').dataset.filename;
                     this.copyPublicLink(filename);
+                } else if (e.target.closest('.unarchive-btn')) {
+                    const filename = e.target.closest('.unarchive-btn').dataset.filename;
+                    this.unarchiveFile(filename);
                 } else if (e.target.closest('.public-slider')) {
                     const filename = e.target.closest('.public-slider').dataset.filename;
                     const isPublic = e.target.checked;
@@ -284,8 +288,14 @@ class xCloudStorage {
                     }
                 } else if (e.target.closest('.file-select-checkbox')) {
                     const filename = e.target.dataset.filename;
+                    const folder = e.target.dataset.folder;
                     const isChecked = e.target.checked;
-                    this.toggleFileSelection(filename, isChecked);
+                    
+                    if (filename) {
+                        this.toggleFileSelection(filename, isChecked);
+                    } else if (folder) {
+                        this.toggleFolderSelection(folder, isChecked);
+                    }
                 } else if (e.target.closest('.folder-item') && !e.target.closest('.delete-btn')) {
                     const folderName = e.target.closest('.folder-item').dataset.folder;
                     this.navigateToFolder(folderName);
@@ -412,6 +422,10 @@ class xCloudStorage {
         
         return `
             <div class="file-item folder-item" data-folder="${folder.name}">
+                <div class="file-checkbox">
+                    <input type="checkbox" class="file-select-checkbox" data-folder="${folder.name}" id="select-folder-${folder.name}">
+                    <label for="select-folder-${folder.name}" class="checkbox-label"></label>
+                </div>
                 <div class="file-icon folder">
                     <i class="fas fa-folder"></i>
                 </div>
@@ -464,6 +478,11 @@ class xCloudStorage {
                         <button class="file-action copy-link-btn" data-filename="${file.name}" title="Copy Link" disabled>
                             <i class="fas fa-copy"></i>
                         </button>
+                        ${this.isArchiveFile(displayName) ? `
+                        <button class="file-action unarchive-btn" data-filename="${file.name}" title="Extract Archive">
+                            <i class="fas fa-file-archive"></i>
+                        </button>
+                        ` : ''}
                     </div>
                     <div class="file-buttons">
                         <button class="file-action download-btn" data-filename="${file.name}" title="Download">
@@ -527,6 +546,11 @@ class xCloudStorage {
         };
         
         return iconMap[ext] || { icon: 'fas fa-file', class: 'default' };
+    }
+
+    isArchiveFile(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        return ['zip', 'rar', '7z', 'tar', 'gz'].includes(ext);
     }
 
     formatFileSize(bytes) {
@@ -1181,9 +1205,18 @@ class xCloudStorage {
         this.updateBulkActions();
     }
 
+    toggleFolderSelection(folderName, isChecked) {
+        if (isChecked) {
+            this.selectedFolders.add(folderName);
+        } else {
+            this.selectedFolders.delete(folderName);
+        }
+        this.updateBulkActions();
+    }
+
     updateBulkActions() {
         const bulkActions = document.getElementById('bulkActions');
-        const selectedCount = this.selectedFiles.size;
+        const selectedCount = this.selectedFiles.size + this.selectedFolders.size;
         
         if (selectedCount > 0) {
             bulkActions.style.display = 'flex';
@@ -1194,50 +1227,62 @@ class xCloudStorage {
 
     // Bulk operations
     async bulkDelete() {
-        if (this.selectedFiles.size === 0) {
-            this.showToast('No files selected', 'error');
+        const totalSelected = this.selectedFiles.size + this.selectedFolders.size;
+        if (totalSelected === 0) {
+            this.showToast('No items selected', 'error');
             return;
         }
 
         const fileList = Array.from(this.selectedFiles);
-        const confirmed = confirm(`Delete ${fileList.length} selected files? This action cannot be undone.`);
+        const folderList = Array.from(this.selectedFolders);
+        const confirmed = confirm(`Delete ${fileList.length} files and ${folderList.length} folders? This action cannot be undone.`);
         
         if (!confirmed) return;
 
         try {
-            const response = await fetch('/api/bulk-delete', {
-                method: 'POST',
-                headers: {
-                    'X-API-Key': this.apiKey,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    files: fileList,
-                    folder: this.currentFolder
-                })
-            });
+            // Delete files
+            if (fileList.length > 0) {
+                const response = await fetch('/api/bulk-delete', {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': this.apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        files: fileList,
+                        folder: this.currentFolder
+                    })
+                });
 
-            if (response.ok) {
-                const result = await response.json();
-                this.showToast(`${fileList.length} files deleted successfully`, 'success');
-                this.selectedFiles.clear();
-                this.updateBulkActions();
-                this.loadFiles();
-            } else {
-                throw new Error('Bulk delete failed');
+                if (!response.ok) {
+                    throw new Error('Bulk delete failed');
+                }
             }
+
+            // Delete folders
+            for (const folderName of folderList) {
+                await this.performFolderDelete(folderName);
+            }
+
+            this.showToast(`${fileList.length} files and ${folderList.length} folders deleted successfully`, 'success');
+            this.selectedFiles.clear();
+            this.selectedFolders.clear();
+            this.updateBulkActions();
+            this.loadFiles();
         } catch (error) {
             this.showToast('Bulk delete error: ' + error.message, 'error');
         }
     }
 
     async bulkArchive() {
-        if (this.selectedFiles.size === 0) {
-            this.showToast('No files selected', 'error');
+        const totalSelected = this.selectedFiles.size + this.selectedFolders.size;
+        if (totalSelected === 0) {
+            this.showToast('No items selected', 'error');
             return;
         }
 
         const fileList = Array.from(this.selectedFiles);
+        const folderList = Array.from(this.selectedFolders);
         
         try {
             const response = await fetch('/api/bulk-archive', {
@@ -1248,6 +1293,7 @@ class xCloudStorage {
                 },
                 body: JSON.stringify({
                     files: fileList,
+                    folders: folderList,
                     folder: this.currentFolder
                 })
             });
@@ -1256,6 +1302,7 @@ class xCloudStorage {
                 const result = await response.json();
                 this.showToast(`Archive "${result.archiveName}" created successfully`, 'success');
                 this.selectedFiles.clear();
+                this.selectedFolders.clear();
                 this.updateBulkActions();
                 this.loadFiles();
             } else {
@@ -1263,6 +1310,31 @@ class xCloudStorage {
             }
         } catch (error) {
             this.showToast('Archive error: ' + error.message, 'error');
+        }
+    }
+
+    async unarchiveFile(filename) {
+        try {
+            const response = await fetch('/api/bulk-unarchive', {
+                method: 'POST',
+                headers: {
+                    'X-API-Key': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    files: [filename],
+                    folder: this.currentFolder
+                })
+            });
+
+            if (response.ok) {
+                this.showToast(`Archive "${filename}" extracted successfully`, 'success');
+                this.loadFiles();
+            } else {
+                throw new Error('Extraction failed');
+            }
+        } catch (error) {
+            this.showToast('Extraction error: ' + error.message, 'error');
         }
     }
 
