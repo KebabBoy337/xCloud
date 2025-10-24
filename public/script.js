@@ -756,25 +756,13 @@ class xCloudStorage {
 
     updateBreadcrumb() {
         const breadcrumb = document.getElementById('breadcrumb');
-        const folderParts = this.currentFolder ? this.currentFolder.split('/') : [];
         
-        // Проверяем кэш breadcrumb
-        const cacheKey = this.currentFolder;
-        if (this.breadcrumbCache && this.breadcrumbCache.key === cacheKey) {
-            return; // Breadcrumb не изменился
-        }
-        
+        // Всегда показываем только Root при навигации в папку
         let html = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
-        
-        let currentPath = '';
-        folderParts.forEach((part, index) => {
-            currentPath += (currentPath ? '/' : '') + part;
-            html += `<span class="breadcrumb-separator">/</span><button class="breadcrumb-item" data-folder="${currentPath}"><i class="fas fa-folder"></i><span>${part}</span></button>`;
-        });
         
         // Обновляем кэш
         this.breadcrumbCache = {
-            key: cacheKey,
+            key: this.currentFolder,
             html: html
         };
         
