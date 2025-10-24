@@ -306,6 +306,13 @@ class xCloudStorage {
             });
         }
 
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => {
+                this.selectAll();
+            });
+        }
+
         // Close modal on outside click
         const uploadModal = document.getElementById('uploadModal');
         if (uploadModal) {
@@ -1423,6 +1430,50 @@ class xCloudStorage {
         } else {
             bulkActions.style.display = 'none';
         }
+    }
+
+    selectAll() {
+        // Clear current selections
+        this.selectedFiles.clear();
+        this.selectedFolders.clear();
+        
+        // Select all files
+        this.files.forEach(file => {
+            this.selectedFiles.add(file.name);
+        });
+        
+        // Select all folders
+        this.folders.forEach(folder => {
+            this.selectedFolders.add(folder.name);
+        });
+        
+        // Update checkboxes visually
+        this.updateCheckboxes();
+        
+        // Update bulk actions
+        this.updateBulkActions();
+        
+        // Show toast
+        const totalSelected = this.selectedFiles.size + this.selectedFolders.size;
+        this.showToast(`${totalSelected} items selected`, 'success');
+    }
+
+    updateCheckboxes() {
+        // Update file checkboxes
+        this.selectedFiles.forEach(filename => {
+            const checkbox = document.querySelector(`input[data-filename="${filename}"]`);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        });
+        
+        // Update folder checkboxes
+        this.selectedFolders.forEach(folderName => {
+            const checkbox = document.querySelector(`input[data-folder="${folderName}"]`);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        });
     }
 
     // Bulk operations
