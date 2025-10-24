@@ -958,17 +958,29 @@ class xCloudStorage {
         const term = searchTerm.toLowerCase();
         let visibleCount = 0;
         
-        fileItems.forEach(item => {
+        console.log('🔍 Total items to filter:', fileItems.length);
+        
+        fileItems.forEach((item, index) => {
             const filename = item.dataset.filename ? item.dataset.filename.toLowerCase() : '';
             const displayNameElement = item.querySelector('.file-name');
             const displayName = displayNameElement ? displayNameElement.textContent.toLowerCase() : '';
+            
             const isVisible = filename.includes(term) || displayName.includes(term);
+            
+            // Debug first few items
+            if (index < 3) {
+                console.log(`🔍 Item ${index}: filename="${filename}", displayName="${displayName}", term="${term}", visible=${isVisible}`);
+            }
             
             item.style.display = isVisible ? 'flex' : 'none';
             if (isVisible) visibleCount++;
         });
         
         console.log(`📊 Found ${visibleCount} files matching "${searchTerm}"`);
+        console.log('🔍 Current display states:', Array.from(fileItems).map(item => ({
+            filename: item.dataset.filename,
+            display: item.style.display
+        })));
     }
     
     // 5. Показать все файлы
