@@ -4,7 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.0.230'; // Версия приложения
+        this.version = '1.0.231'; // Версия приложения
         console.log('xCloud Storage v' + this.version + ' initialized');
         this.init();
     }
@@ -218,13 +218,16 @@ class xCloudStorage {
                 } else if (e.target.closest('.delete-btn')) {
                     const filename = e.target.closest('.delete-btn').dataset.filename;
                     this.deleteFile(filename);
-                } else if (e.target.closest('.link-btn')) {
-                    const filename = e.target.closest('.link-btn').dataset.filename;
-                    const linkBtn = e.target.closest('.link-btn');
-                    if (linkBtn.classList.contains('public')) {
-                        this.makeFilePrivate(filename);
+                } else if (e.target.closest('.copy-link-btn')) {
+                    const filename = e.target.closest('.copy-link-btn').dataset.filename;
+                    this.copyPublicLink(filename);
+                } else if (e.target.closest('.public-slider')) {
+                    const filename = e.target.closest('.public-slider').dataset.filename;
+                    const isPublic = e.target.checked;
+                    if (isPublic) {
+                        this.makeFilePublic(filename);
                     } else {
-                        this.createPermanentLink(filename);
+                        this.makeFilePrivate(filename);
                     }
                 } else if (e.target.closest('.folder-item')) {
                     const folderName = e.target.closest('.folder-item').dataset.folder;
@@ -357,9 +360,11 @@ class xCloudStorage {
                     </div>
                 </div>
                 <div class="file-actions">
-                    <button class="file-action danger folder-delete-btn" data-folder="${folder.name}" title="Delete Folder">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="file-buttons">
+                        <button class="file-action danger folder-delete-btn" data-folder="${folder.name}" title="Delete Folder">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -384,15 +389,25 @@ class xCloudStorage {
                     </div>
                 </div>
                 <div class="file-actions">
-                    <button class="file-action download-btn" data-filename="${file.name}" title="Download">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="file-action link-btn" data-filename="${file.name}" title="Create Permanent Link">
-                        <i class="fas fa-link"></i>
-                    </button>
-                    <button class="file-action danger delete-btn" data-filename="${file.name}" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="file-controls">
+                        <div class="public-toggle">
+                            <input type="checkbox" id="public-${file.name}" class="public-slider" data-filename="${file.name}">
+                            <label for="public-${file.name}" class="slider-label">
+                                <span class="slider-text">Private</span>
+                            </label>
+                        </div>
+                        <button class="file-action copy-link-btn" data-filename="${file.name}" title="Copy Link" disabled>
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div class="file-buttons">
+                        <button class="file-action download-btn" data-filename="${file.name}" title="Download">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="file-action danger delete-btn" data-filename="${file.name}" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -569,9 +584,8 @@ class xCloudStorage {
         }
     }
 
-    async createPermanentLink(filename) {
+    async makeFilePublic(filename) {
         try {
-            // Make file public first
             const url = this.currentFolder ? 
                 `/api/files/${encodeURIComponent(filename)}/make-public?folder=${encodeURIComponent(this.currentFolder)}` : 
                 `/api/files/${encodeURIComponent(filename)}/make-public`;
@@ -584,25 +598,50 @@ class xCloudStorage {
             });
 
             if (response.ok) {
-                const result = await response.json();
-                const baseUrl = window.location.origin;
-                const link = `${baseUrl}${result.publicLink}`;
-                
-                // Copy to clipboard
-                navigator.clipboard.writeText(link).then(() => {
-                    this.showToast('Permanent link created and copied to clipboard', 'success');
-                }).catch(() => {
-                    // Fallback: show in prompt
-                    prompt('Permanent link (copy this):', link);
-                });
-                
-                // Update the UI to show that file is now public
+                this.showToast('File made public', 'success');
                 this.updateFilePublicStatus(filename, true);
             } else {
                 throw new Error('Failed to make file public');
             }
         } catch (error) {
-            this.showToast('Error creating permanent link: ' + error.message, 'error');
+            this.showToast('Error making file public: ' + error.message, 'error');
+            // Reset slider if failed
+            const slider = document.querySelector(`#public-${filename}`);
+            if (slider) slider.checked = false;
+        }
+    }
+
+    async copyPublicLink(filename) {
+        try {
+            const url = this.currentFolder ? 
+                `/api/files/${encodeURIComponent(filename)}/public-status?folder=${encodeURIComponent(this.currentFolder)}` : 
+                `/api/files/${encodeURIComponent(filename)}/public-status`;
+            
+            const response = await fetch(url, {
+                headers: {
+                    'X-API-Key': this.apiKey
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.isPublic && data.publicLink) {
+                    const baseUrl = window.location.origin;
+                    const link = `${baseUrl}${data.publicLink}`;
+                    
+                    navigator.clipboard.writeText(link).then(() => {
+                        this.showToast('Link copied to clipboard', 'success');
+                    }).catch(() => {
+                        prompt('Public link (copy this):', link);
+                    });
+                } else {
+                    this.showToast('File is not public', 'error');
+                }
+            } else {
+                throw new Error('Failed to get public status');
+            }
+        } catch (error) {
+            this.showToast('Error copying link: ' + error.message, 'error');
         }
     }
 
@@ -655,18 +694,30 @@ class xCloudStorage {
     }
 
     async updateFilePublicStatus(filename, isPublic) {
-        // Update the link button appearance based on public status
+        // Update the slider and copy button based on public status
         const fileItem = document.querySelector(`[data-filename="${filename}"]`);
         if (fileItem) {
-            const linkBtn = fileItem.querySelector('.link-btn');
-            if (linkBtn) {
+            const slider = fileItem.querySelector('.public-slider');
+            const copyBtn = fileItem.querySelector('.copy-link-btn');
+            const sliderText = fileItem.querySelector('.slider-text');
+            
+            if (slider) {
+                slider.checked = isPublic;
+            }
+            
+            if (copyBtn) {
+                copyBtn.disabled = !isPublic;
                 if (isPublic) {
-                    linkBtn.classList.add('public');
-                    linkBtn.title = 'File is public - click to make private';
+                    copyBtn.classList.add('active');
+                    copyBtn.title = 'Copy Public Link';
                 } else {
-                    linkBtn.classList.remove('public');
-                    linkBtn.title = 'Create Permanent Link';
+                    copyBtn.classList.remove('active');
+                    copyBtn.title = 'File is private';
                 }
+            }
+            
+            if (sliderText) {
+                sliderText.textContent = isPublic ? 'Public' : 'Private';
             }
         }
     }

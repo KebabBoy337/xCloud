@@ -53,8 +53,12 @@ app.use('/api/', limiter);
 // Ensure storage directory exists
 fs.ensureDirSync(config.STORAGE_PATH);
 
-// Public links storage
-const PUBLIC_LINKS_FILE = path.join(config.STORAGE_PATH, '.public_links.json');
+// Public links storage in Important_files directory
+const IMPORTANT_FILES_DIR = path.join(config.STORAGE_PATH, 'Important_files');
+const PUBLIC_LINKS_FILE = path.join(IMPORTANT_FILES_DIR, '.public_links.json');
+
+// Ensure Important_files directory exists
+fs.ensureDirSync(IMPORTANT_FILES_DIR);
 
 // Load public links
 let publicLinks = {};

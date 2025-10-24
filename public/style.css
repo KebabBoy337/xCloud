@@ -1248,6 +1248,102 @@ body {
     box-shadow: 0 4px 15px rgba(46, 213, 115, 0.4);
 }
 
+/* File Actions Layout */
+.file-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.file-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.file-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Public Toggle Slider */
+.public-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.public-slider {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    appearance: none;
+}
+
+.public-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.public-slider:checked {
+    background: var(--success-color);
+}
+
+.public-slider:checked::before {
+    transform: translateX(26px);
+}
+
+.slider-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.slider-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Copy Link Button */
+.copy-link-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    opacity: 0.5;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+}
+
+.copy-link-btn.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-color: transparent;
+    opacity: 1;
+    cursor: pointer;
+}
+
+.copy-link-btn.active:hover {
+    background: linear-gradient(135deg, #5a6fd8, #6a4190);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
 /* Folder Delete Button */
 .folder-delete-btn {
     background: var(--danger-color);
