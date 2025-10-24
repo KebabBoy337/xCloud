@@ -277,21 +277,11 @@ class xCloudStorage {
             });
         }
 
-        // Search functionality
+        // Text search functionality
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
-                const term = e.target.value.trim();
-                console.log('🔍 Text search input:', term);
-                this.currentTextSearch = term; // Store current text search
-                
-                if (term === '') {
-                    console.log('🔄 Showing all files');
-                    this.showAllFiles();
-                } else {
-                    console.log('🔍 Filtering files by name');
-                    this.filterFiles(term);
-                }
+                this.handleTextSearch(e.target.value.trim());
             });
         }
 
@@ -299,14 +289,14 @@ class xCloudStorage {
         const searchByDateBtn = document.getElementById('searchByDateBtn');
         if (searchByDateBtn) {
             searchByDateBtn.addEventListener('click', () => {
-                this.performDateSearch();
+                this.handleDateSearch();
             });
         }
 
         const clearSearchBtn = document.getElementById('clearSearchBtn');
         if (clearSearchBtn) {
             clearSearchBtn.addEventListener('click', () => {
-                this.clearDateSearch();
+                this.clearAllSearches();
             });
         }
 
@@ -315,7 +305,7 @@ class xCloudStorage {
         if (dateSearchInput) {
             dateSearchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    this.performDateSearch();
+                    this.handleDateSearch();
                 }
             });
         }
@@ -891,69 +881,63 @@ class xCloudStorage {
         }
     }
 
-    filterFiles(searchTerm) {
-        console.log('🔍 Filtering files with term:', searchTerm);
-        const fileItems = document.querySelectorAll('.file-item');
-        const term = searchTerm.toLowerCase();
-        console.log('🔍 Total file items found:', fileItems.length);
-
-        let visibleCount = 0;
-        fileItems.forEach((item, index) => {
-            const filename = item.dataset.filename ? item.dataset.filename.toLowerCase() : '';
-            const displayNameElement = item.querySelector('.file-name');
-            const displayName = displayNameElement ? displayNameElement.textContent.toLowerCase() : '';
-            const isVisible = filename.includes(term) || displayName.includes(term);
-            item.style.display = isVisible ? 'flex' : 'none';
-            if (isVisible) visibleCount++;
-            
-            if (index < 3) { // Log first 3 items for debugging
-                console.log(`🔍 Item ${index}: filename="${filename}", displayName="${displayName}", visible=${isVisible}`);
-            }
-        });
-        console.log(`📊 Found ${visibleCount} files matching "${searchTerm}"`);
+    // ===== НОВАЯ ЛОГИКА ПОИСКА =====
+    
+    // 1. Поиск по тексту (работает сразу)
+    handleTextSearch(searchTerm) {
+        console.log('🔍 Text search:', searchTerm);
+        this.currentTextSearch = searchTerm;
+        
+        if (searchTerm === '') {
+            this.showAllFiles();
+        } else {
+            this.filterFilesByName(searchTerm);
+        }
     }
-
-    showAllFiles() {
-        const fileItems = document.querySelectorAll('.file-item');
-        fileItems.forEach(item => {
-            item.style.display = 'flex';
-        });
+    
+    // 2. Поиск по дате (с кнопкой)
+    handleDateSearch() {
+        const dateInput = document.getElementById('dateSearchInput');
+        const date = dateInput.value;
+        
+        console.log('📅 Date search:', date);
+        
+        if (!date) {
+            this.showToast('Выберите дату для поиска', 'error');
+            return;
+        }
+        
+        this.searchByDate(date);
     }
-
-    async searchFilesByDate(date) {
-        console.log('📅 Searching files by date:', date);
-        if (!this.apiKey) return;
-
+    
+    // 3. Комбинированный поиск
+    async searchByDate(date) {
+        console.log('🌐 Loading files by date:', date);
         this.showLoading(true);
-
+        
         try {
             let url = `/api/files/search?date=${encodeURIComponent(date)}`;
             if (this.currentFolder) {
                 url += `&folder=${encodeURIComponent(this.currentFolder)}`;
             }
             
-            console.log('🌐 API URL:', url);
             const response = await fetch(url, {
-                headers: {
-                    'X-API-Key': this.apiKey
-                }
+                headers: { 'X-API-Key': this.apiKey }
             });
-
+            
             if (response.ok) {
                 const data = await response.json();
-                console.log('📊 API Response:', data);
                 this.files = data.files || [];
                 this.folders = data.folders || [];
                 this.renderFiles();
                 this.updateStats();
                 
-                // Apply current text search if any
+                // Если есть текстовый поиск - применяем его
                 if (this.currentTextSearch) {
-                    console.log('🔄 Applying text filter after date search:', this.currentTextSearch);
-                    this.filterFiles(this.currentTextSearch);
+                    console.log('🔄 Applying text filter:', this.currentTextSearch);
+                    this.filterFilesByName(this.currentTextSearch);
                 }
                 
-                // Show search results info
                 const dateStr = new Date(date).toLocaleDateString('ru-RU');
                 this.showToast(`Найдено ${this.files.length} файлов за ${dateStr}`, 'info');
             } else {
@@ -966,29 +950,42 @@ class xCloudStorage {
             this.showLoading(false);
         }
     }
-
-    performDateSearch() {
-        const dateInput = document.getElementById('dateSearchInput');
-        const date = dateInput.value;
+    
+    // 4. Фильтрация по имени файла
+    filterFilesByName(searchTerm) {
+        console.log('🔍 Filtering by name:', searchTerm);
+        const fileItems = document.querySelectorAll('.file-item');
+        const term = searchTerm.toLowerCase();
+        let visibleCount = 0;
         
-        console.log('🔍 Date search triggered:', { date });
+        fileItems.forEach(item => {
+            const filename = item.dataset.filename ? item.dataset.filename.toLowerCase() : '';
+            const displayNameElement = item.querySelector('.file-name');
+            const displayName = displayNameElement ? displayNameElement.textContent.toLowerCase() : '';
+            const isVisible = filename.includes(term) || displayName.includes(term);
+            
+            item.style.display = isVisible ? 'flex' : 'none';
+            if (isVisible) visibleCount++;
+        });
         
-        if (!date) {
-            this.showToast('Выберите дату для поиска', 'error');
-            return;
-        }
-        
-        console.log('📅 Date-only search');
-        this.searchFilesByDate(date);
+        console.log(`📊 Found ${visibleCount} files matching "${searchTerm}"`);
     }
-
-
-    clearDateSearch() {
+    
+    // 5. Показать все файлы
+    showAllFiles() {
+        const fileItems = document.querySelectorAll('.file-item');
+        fileItems.forEach(item => {
+            item.style.display = 'flex';
+        });
+    }
+    
+    // 6. Очистить все поиски
+    clearAllSearches() {
         document.getElementById('dateSearchInput').value = '';
         document.getElementById('searchInput').value = '';
-        this.currentTextSearch = ''; // Clear text search
-        this.loadFiles(); // Reload all files
-        this.showAllFiles(); // Show all files
+        this.currentTextSearch = '';
+        this.loadFiles();
+        this.showAllFiles();
     }
 
     openUploadModal() {
