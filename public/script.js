@@ -408,7 +408,7 @@ class xCloudStorage {
                     } else if (folder) {
                         this.toggleFolderSelection(folder, isChecked);
                     }
-                } else if (folderItem && !deleteBtn && !checkbox) {
+                } else if (folderItem && !deleteBtn && !checkbox && !e.target.closest('.file-checkbox')) {
                     const folderName = folderItem.dataset.folder;
                     this.navigateToFolder(folderName);
                 }
