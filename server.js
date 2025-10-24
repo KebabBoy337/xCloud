@@ -316,32 +316,6 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   console.log('Base name:', baseName);
   console.log('File extension:', fileExt);
   
-  // Debug: List all files in storage directory
-  try {
-    const storageFiles = fs.readdirSync(config.STORAGE_PATH);
-    console.log('Files in storage directory:', storageFiles);
-    console.log('Looking for similar files:');
-    storageFiles.forEach(file => {
-      if (file.toLowerCase().includes('screenshot') || file.toLowerCase().includes('2025-01-29')) {
-        console.log('Found similar file:', file);
-      }
-    });
-    
-    // Check if the exact file exists
-    const exactFile = path.join(config.STORAGE_PATH, originalName);
-    console.log('Checking exact file:', exactFile);
-    console.log('Exact file exists:', fs.existsSync(exactFile));
-    
-    // Check for files with similar names
-    storageFiles.forEach(file => {
-      if (file.includes(originalName) || originalName.includes(file)) {
-        console.log('Found similar file name:', file);
-      }
-    });
-  } catch (error) {
-    console.log('Error reading storage directory:', error.message);
-  }
-  
   // Check for duplicates and add index if needed
   // Only check for duplicates in the target folder, not globally
   while (true) {
