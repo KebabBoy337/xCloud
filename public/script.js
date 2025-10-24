@@ -887,7 +887,7 @@ class xCloudStorage {
         document.getElementById('progressText').textContent = '0%';
         
         // Clear stored files reference
-        this.selectedFiles = [];
+        this.selectedFiles.clear();
         
         // Remove file info display but preserve file input
         const uploadContent = document.querySelector('.upload-content');

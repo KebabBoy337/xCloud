@@ -106,17 +106,8 @@ const storage = multer.diskStorage({
     cb(null, config.STORAGE_PATH);
   },
   filename: (req, file, cb) => {
-    // Получаем имя файла без расширения и расширение отдельно
-    const fileExt = path.extname(file.originalname);
-    const baseName = path.basename(file.originalname, fileExt);
-    
-    // Создаем дату и время в формате YYYY-MM-DD_HH-MM
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 19).replace(/[-:]/g, '-').replace('T', '_');
-    
-    // Формируем новое имя: оригинальное_имя_(дата_время).расширение
-    const uniqueName = `${baseName}_(${dateStr})${fileExt}`;
-    cb(null, uniqueName);
+    // Use original filename for now, we'll handle duplicates later
+    cb(null, file.originalname);
   }
 });
 
@@ -309,23 +300,42 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   // Ensure folder exists
   fs.ensureDirSync(folderPath);
   
-  // Move file to correct folder if needed
-  if (folder) {
-    const sourcePath = req.file.path;
-    const destinationPath = path.join(folderPath, req.file.filename);
+  // Handle file naming and duplicates
+  const originalName = req.file.originalname;
+  const fileExt = path.extname(originalName);
+  const baseName = path.basename(originalName, fileExt);
+  
+  let finalName = originalName;
+  let counter = 1;
+  
+  // Check for duplicates and add index if needed
+  while (true) {
+    const targetPath = folder ? path.join(folderPath, finalName) : path.join(config.STORAGE_PATH, finalName);
     
-    try {
-      fs.moveSync(sourcePath, destinationPath);
-      console.log('File moved from', sourcePath, 'to', destinationPath);
-    } catch (error) {
-      console.error('Error moving file:', error);
-      return res.status(500).json({ error: 'Failed to move file to folder' });
+    if (!fs.existsSync(targetPath)) {
+      break; // File doesn't exist, we can use this name
     }
+    
+    // File exists, try with index
+    finalName = `${baseName} (${counter})${fileExt}`;
+    counter++;
+  }
+  
+  // Move file to correct location with final name
+  const sourcePath = req.file.path;
+  const destinationPath = folder ? path.join(folderPath, finalName) : path.join(config.STORAGE_PATH, finalName);
+  
+  try {
+    fs.moveSync(sourcePath, destinationPath);
+    console.log('File saved as:', finalName, 'in', folder || 'root');
+  } catch (error) {
+    console.error('Error moving file:', error);
+    return res.status(500).json({ error: 'Failed to save file' });
   }
   
   res.json({
     message: 'File uploaded successfully',
-    filename: req.file.filename,
+    filename: finalName,
     originalName: req.file.originalname,
     size: req.file.size,
     folder: folder
