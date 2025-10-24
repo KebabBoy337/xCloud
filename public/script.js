@@ -320,14 +320,27 @@ class xCloudStorage {
         const fileList = document.getElementById('fileList');
         if (fileList) {
             fileList.addEventListener('click', (e) => {
+                console.log('File list click event:', e.target, e.target.closest('.delete-btn'), e.target.closest('.folder-item'));
+                
                 if (e.target.closest('.download-btn')) {
                     const filename = e.target.closest('.download-btn').dataset.filename;
                     this.downloadFile(filename);
                 } else if (e.target.closest('.delete-btn')) {
                     const deleteBtn = e.target.closest('.delete-btn');
                     const filename = deleteBtn.dataset.filename;
+                    const folderName = deleteBtn.dataset.folder;
+                    console.log('Delete button clicked - filename:', filename, 'folderName:', folderName);
+                    
                     if (filename) {
+                        console.log('Deleting file:', filename);
                         this.deleteFile(filename);
+                    } else if (folderName) {
+                        console.log('Deleting folder:', folderName);
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.deleteFolder(folderName);
+                    } else {
+                        console.error('Neither filename nor folderName found in delete button');
                     }
                 } else if (e.target.closest('.copy-link-btn')) {
                     const filename = e.target.closest('.copy-link-btn').dataset.filename;
@@ -356,17 +369,6 @@ class xCloudStorage {
                 } else if (e.target.closest('.folder-item') && !e.target.closest('.delete-btn') && !e.target.closest('.file-checkbox')) {
                     const folderName = e.target.closest('.folder-item').dataset.folder;
                     this.navigateToFolder(folderName);
-                } else if (e.target.closest('.delete-btn') && e.target.closest('.folder-item')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const deleteBtn = e.target.closest('.delete-btn');
-                    const folderName = deleteBtn.dataset.folder;
-                    console.log('Delete folder clicked:', folderName); // Debug
-                    if (folderName) {
-                        this.deleteFolder(folderName);
-                    } else {
-                        console.error('Folder name is undefined');
-                    }
                 }
             });
         }
@@ -1105,10 +1107,12 @@ class xCloudStorage {
     }
 
     deleteFolder(folderName) {
+        console.log('deleteFolder called with:', folderName);
         this.pendingDelete = {
             type: 'folder',
             name: folderName
         };
+        console.log('pendingDelete set:', this.pendingDelete);
         this.showDeleteModal(`Delete folder "${folderName}"?`, `Are you sure you want to delete the folder "${folderName}" and all its contents?`);
     }
 
