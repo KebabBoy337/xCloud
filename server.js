@@ -316,7 +316,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
       break; // File doesn't exist, we can use this name
     }
     
-    // File exists, try with index
+    // File exists, try with index (starting from 1, not 0)
     finalName = `${baseName} (${counter})${fileExt}`;
     counter++;
   }
