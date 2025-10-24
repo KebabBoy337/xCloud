@@ -2,7 +2,7 @@
 
 Modern file storage with beautiful glass interface, folder support, and public links.
 
-**Version:** 1.0.233
+**Version:** 1.0.3 Stable
 
 ## 🚀 Features
 

@@ -4,7 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.0.233'; // Версия приложения
+        this.version = '1.0.3'; // Версия приложения
         this.init();
     }
 
@@ -95,6 +95,15 @@ class xCloudStorage {
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
                 this.logout();
+            });
+        }
+
+        // Home logo click
+        const homeLogo = document.getElementById('homeLogo');
+        if (homeLogo) {
+            homeLogo.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.navigateToHome();
             });
         }
 
@@ -524,6 +533,11 @@ class xCloudStorage {
 
     navigateToFolder(folderName) {
         this.currentFolder = folderName;
+        this.loadFiles();
+    }
+
+    navigateToHome() {
+        this.currentFolder = '';
         this.loadFiles();
     }
 

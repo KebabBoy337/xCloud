@@ -3,7 +3,7 @@
 ## Overview
 xCloud Storage provides a modern file storage solution with folder support, public links, and authentication.
 
-**Version:** 1.0.233  
+**Version:** 1.0.3 Stable  
 **Base URL:** `https://your-domain.com`
 
 ## Authentication
@@ -21,7 +21,7 @@ GET /api/health
 ```json
 {
   "status": "ok",
-  "version": "1.0.233",
+  "version": "1.0.3",
   "timestamp": "2024-01-01T00:00:00.000Z"
 }
 ```
@@ -313,6 +313,7 @@ curl -O https://your-domain.com/documents/document.pdf
 
 ## Version History
 
+- **1.0.3 Stable** - Clickable logo, version update, code cleanup, improved folder display, unified UI
 - **1.0.233** - Code cleanup, improved folder display, unified UI
 - **1.0.232** - Fixed folder styling and delete modal
 - **1.0.231** - Added public link management
