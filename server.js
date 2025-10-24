@@ -44,13 +44,31 @@ app.use((req, res, next) => {
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 1000, // limit each IP to 1000 requests per windowMs (increased for file operations)
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   // Trust proxy for accurate IP detection
   trustProxy: true
 });
-app.use('/api/', limiter);
+// Separate rate limiter for file uploads (more lenient)
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // limit each IP to 500 upload requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  trustProxy: true
+});
+
+// Apply rate limiting to all API routes except health
+app.use('/api/', (req, res, next) => {
+  if (req.path === '/health') {
+    return next(); // Skip rate limiting for health check
+  }
+  if (req.path === '/upload' || req.path.startsWith('/files/')) {
+    return uploadLimiter(req, res, next); // Use more lenient limiter for file operations
+  }
+  return limiter(req, res, next);
+});
 
 // Ensure storage directory exists
 fs.ensureDirSync(config.STORAGE_PATH);
