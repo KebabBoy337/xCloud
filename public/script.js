@@ -766,11 +766,20 @@ class xCloudStorage {
         
         let html = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
         
+        // Ограничиваем глубину до 5 папок
+        const maxDepth = 5;
+        const displayParts = folderParts.slice(0, maxDepth);
+        
         let currentPath = '';
-        folderParts.forEach((part, index) => {
+        displayParts.forEach((part, index) => {
             currentPath += (currentPath ? '/' : '') + part;
             html += `<span class="breadcrumb-separator">/</span><button class="breadcrumb-item" data-folder="${currentPath}"><i class="fas fa-folder"></i><span>${part}</span></button>`;
         });
+        
+        // Если больше 5 папок - показываем только Root
+        if (folderParts.length > maxDepth) {
+            html = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
+        }
         
         // Обновляем кэш
         this.breadcrumbCache = {
@@ -782,8 +791,7 @@ class xCloudStorage {
     }
 
     navigateToFolder(folderName) {
-        // Сбрасываем путь до Root при навигации в папку
-        this.currentFolder = '';
+        this.currentFolder = folderName;
         this.loadFiles(true); // Принудительное обновление при навигации
     }
 
