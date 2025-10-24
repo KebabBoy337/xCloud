@@ -1433,6 +1433,110 @@ body {
 }
 
 
+/* File Selection Checkbox */
+.file-checkbox {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+}
+
+.file-select-checkbox {
+    display: none;
+}
+
+.checkbox-label {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--glass-border);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkbox-label:hover {
+    border-color: var(--accent-color);
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.file-select-checkbox:checked + .checkbox-label {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.file-select-checkbox:checked + .checkbox-label::after {
+    content: '✓';
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Bulk Actions */
+.bulk-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-right: 1rem;
+}
+
+.bulk-actions .btn {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    white-space: nowrap;
+}
+
+.bulk-actions .btn-danger {
+    background: linear-gradient(135deg, var(--danger-color), #ff6b7a);
+    border: 1px solid var(--danger-color);
+}
+
+.bulk-actions .btn-danger:hover {
+    background: linear-gradient(135deg, #ff3742, var(--danger-color));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+}
+
+.bulk-actions .btn-primary {
+    background: linear-gradient(135deg, var(--accent-color), #00b8e6);
+    border: 1px solid var(--accent-color);
+}
+
+.bulk-actions .btn-primary:hover {
+    background: linear-gradient(135deg, #00b8e6, var(--accent-color));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+/* File item with checkbox */
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.file-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(0, 212, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.file-item.selected {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: var(--accent-color);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .breadcrumb {
@@ -1449,5 +1553,21 @@ body {
         right: 0.5rem;
         font-size: 0.7rem;
         padding: 0.25rem 0.75rem;
+    }
+    
+    .bulk-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-right: 0.5rem;
+    }
+    
+    .bulk-actions .btn {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .section-actions {
+        flex-wrap: wrap;
+        gap: 0.5rem;
     }
 }

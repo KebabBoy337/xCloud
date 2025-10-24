@@ -5,6 +5,7 @@ class xCloudStorage {
         this.folders = [];
         this.currentFolder = '';
         this.version = '1.0.3'; // Версия приложения
+        this.selectedFiles = new Set(); // Для отслеживания выбранных файлов
         this.init();
     }
 
@@ -228,6 +229,28 @@ class xCloudStorage {
             });
         }
 
+        // Bulk action buttons
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.addEventListener('click', () => {
+                this.bulkDelete();
+            });
+        }
+
+        const bulkArchiveBtn = document.getElementById('bulkArchiveBtn');
+        if (bulkArchiveBtn) {
+            bulkArchiveBtn.addEventListener('click', () => {
+                this.bulkArchive();
+            });
+        }
+
+        const bulkUnarchiveBtn = document.getElementById('bulkUnarchiveBtn');
+        if (bulkUnarchiveBtn) {
+            bulkUnarchiveBtn.addEventListener('click', () => {
+                this.bulkUnarchive();
+            });
+        }
+
         // Close modal on outside click
         const uploadModal = document.getElementById('uploadModal');
         if (uploadModal) {
@@ -259,6 +282,10 @@ class xCloudStorage {
                     } else {
                         this.makeFilePrivate(filename);
                     }
+                } else if (e.target.closest('.file-select-checkbox')) {
+                    const filename = e.target.dataset.filename;
+                    const isChecked = e.target.checked;
+                    this.toggleFileSelection(filename, isChecked);
                 } else if (e.target.closest('.folder-item') && !e.target.closest('.delete-btn')) {
                     const folderName = e.target.closest('.folder-item').dataset.folder;
                     this.navigateToFolder(folderName);
@@ -412,6 +439,10 @@ class xCloudStorage {
         
         return `
             <div class="file-item" data-filename="${file.name}">
+                <div class="file-checkbox">
+                    <input type="checkbox" class="file-select-checkbox" data-filename="${file.name}" id="select-${file.name}">
+                    <label for="select-${file.name}" class="checkbox-label"></label>
+                </div>
                 <div class="file-icon ${fileIcon.class}">
                     <i class="${fileIcon.icon}"></i>
                 </div>
@@ -771,8 +802,8 @@ class xCloudStorage {
         document.getElementById('progressFill').style.width = '0%';
         document.getElementById('progressText').textContent = '0%';
         
-        // Clear stored file reference
-        this.selectedFile = null;
+        // Clear stored files reference
+        this.selectedFiles = [];
         
         // Remove file info display but preserve file input
         const uploadContent = document.querySelector('.upload-content');
@@ -786,8 +817,8 @@ class xCloudStorage {
             if (!uploadContent.querySelector('i.fa-cloud-upload-alt')) {
                 uploadContent.innerHTML = `
                     <i class="fas fa-cloud-upload-alt"></i>
-                    <h4>Drag file here</h4>
-                    <p>or click to select</p>
+                    <h4>Drag files here</h4>
+                    <p>or click to select multiple files</p>
                 `;
             }
         }
@@ -796,33 +827,43 @@ class xCloudStorage {
     handleFileSelect(files) {
         if (files.length === 0) return;
 
-        const file = files[0];
-        
-        // Store the file reference for later use
-        this.selectedFile = file;
+        // Store all selected files
+        this.selectedFiles = Array.from(files);
         
         const startUploadBtn = document.getElementById('startUpload');
         if (startUploadBtn) {
             startUploadBtn.disabled = false;
         }
         
-        // Show file info - but preserve the file input
+        // Show files info
         const uploadContent = document.querySelector('.upload-content');
         if (uploadContent) {
-            // Create a new content div instead of replacing the entire content
-            const fileInfo = document.createElement('div');
-            fileInfo.className = 'file-info-display';
-            fileInfo.innerHTML = `
-                <i class="fas fa-file"></i>
-                <h4>${file.name}</h4>
-                <p>${this.formatFileSize(file.size)}</p>
-            `;
-            
-            // Clear previous file info and add new one
+            // Clear previous file info
             const existingInfo = uploadContent.querySelector('.file-info-display');
             if (existingInfo) {
                 existingInfo.remove();
             }
+            
+            // Create new content for multiple files
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'file-info-display';
+            
+            if (files.length === 1) {
+                const file = files[0];
+                fileInfo.innerHTML = `
+                    <i class="fas fa-file"></i>
+                    <h4>${file.name}</h4>
+                    <p>${this.formatFileSize(file.size)}</p>
+                `;
+            } else {
+                const totalSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+                fileInfo.innerHTML = `
+                    <i class="fas fa-files"></i>
+                    <h4>${files.length} files selected</h4>
+                    <p>Total size: ${this.formatFileSize(totalSize)}</p>
+                `;
+            }
+            
             uploadContent.appendChild(fileInfo);
         }
     }
@@ -842,52 +883,66 @@ class xCloudStorage {
             return;
         }
         
-        let file = fileInput.files[0];
+        let files = Array.from(fileInput.files);
 
-        // Fallback: use stored file reference if fileInput doesn't have files
-        if (!file && this.selectedFile) {
-            file = this.selectedFile;
+        // Fallback: use stored files reference if fileInput doesn't have files
+        if (files.length === 0 && this.selectedFiles && this.selectedFiles.length > 0) {
+            files = this.selectedFiles;
         }
 
-        if (!file) {
-            this.showToast('Select a file', 'error');
+        if (files.length === 0) {
+            this.showToast('Select files', 'error');
             return;
         }
 
-        // Проверяем размер файла (500MB = 500 * 1024 * 1024 bytes)
+        // Проверяем размер каждого файла (500MB = 500 * 1024 * 1024 bytes)
         const maxSize = 500 * 1024 * 1024; // 500MB
-        if (file.size > maxSize) {
-            this.showToast('File too large. Maximum size: 500MB', 'error');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-        if (this.currentFolder) {
-            formData.append('folder', this.currentFolder);
+        for (const file of files) {
+            if (file.size > maxSize) {
+                this.showToast(`File "${file.name}" too large. Maximum size: 500MB`, 'error');
+                return;
+            }
         }
 
         this.showUploadProgress(true);
 
         try {
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                headers: {
-                    'X-API-Key': this.apiKey
-                },
-                body: formData
-            });
+            // Upload files sequentially to avoid overwhelming the server
+            const results = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const formData = new FormData();
+                formData.append('file', file);
+                if (this.currentFolder) {
+                    formData.append('folder', this.currentFolder);
+                }
 
-            if (response.ok) {
-                const result = await response.json();
-                this.showToast(`File "${result.originalName}" uploaded successfully`, 'success');
-                this.closeUploadModal();
-                this.loadFiles();
-            } else if (response.status === 413) {
-                throw new Error('File too large. Maximum size: 500MB');
-            } else {
-                throw new Error('Upload failed');
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': this.apiKey
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    results.push(result);
+                } else if (response.status === 413) {
+                    throw new Error(`File "${file.name}" too large. Maximum size: 500MB`);
+                } else {
+                    throw new Error(`Upload failed for "${file.name}"`);
+                }
             }
+
+            if (results.length === 1) {
+                this.showToast(`File "${results[0].originalName}" uploaded successfully`, 'success');
+            } else {
+                this.showToast(`${results.length} files uploaded successfully`, 'success');
+            }
+            
+            this.closeUploadModal();
+            this.loadFiles();
         } catch (error) {
             this.showToast('Upload error: ' + error.message, 'error');
         } finally {
@@ -1114,6 +1169,135 @@ class xCloudStorage {
             toast.classList.remove('show');
             setTimeout(() => container.removeChild(toast), 300);
         }, 3000);
+    }
+
+    // File selection methods
+    toggleFileSelection(filename, isChecked) {
+        if (isChecked) {
+            this.selectedFiles.add(filename);
+        } else {
+            this.selectedFiles.delete(filename);
+        }
+        this.updateBulkActions();
+    }
+
+    updateBulkActions() {
+        const bulkActions = document.getElementById('bulkActions');
+        const selectedCount = this.selectedFiles.size;
+        
+        if (selectedCount > 0) {
+            bulkActions.style.display = 'flex';
+        } else {
+            bulkActions.style.display = 'none';
+        }
+    }
+
+    // Bulk operations
+    async bulkDelete() {
+        if (this.selectedFiles.size === 0) {
+            this.showToast('No files selected', 'error');
+            return;
+        }
+
+        const fileList = Array.from(this.selectedFiles);
+        const confirmed = confirm(`Delete ${fileList.length} selected files? This action cannot be undone.`);
+        
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch('/api/bulk-delete', {
+                method: 'POST',
+                headers: {
+                    'X-API-Key': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    files: fileList,
+                    folder: this.currentFolder
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.showToast(`${fileList.length} files deleted successfully`, 'success');
+                this.selectedFiles.clear();
+                this.updateBulkActions();
+                this.loadFiles();
+            } else {
+                throw new Error('Bulk delete failed');
+            }
+        } catch (error) {
+            this.showToast('Bulk delete error: ' + error.message, 'error');
+        }
+    }
+
+    async bulkArchive() {
+        if (this.selectedFiles.size === 0) {
+            this.showToast('No files selected', 'error');
+            return;
+        }
+
+        const fileList = Array.from(this.selectedFiles);
+        
+        try {
+            const response = await fetch('/api/bulk-archive', {
+                method: 'POST',
+                headers: {
+                    'X-API-Key': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    files: fileList,
+                    folder: this.currentFolder
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.showToast(`Archive "${result.archiveName}" created successfully`, 'success');
+                this.selectedFiles.clear();
+                this.updateBulkActions();
+                this.loadFiles();
+            } else {
+                throw new Error('Archive creation failed');
+            }
+        } catch (error) {
+            this.showToast('Archive error: ' + error.message, 'error');
+        }
+    }
+
+    async bulkUnarchive() {
+        if (this.selectedFiles.size === 0) {
+            this.showToast('No files selected', 'error');
+            return;
+        }
+
+        const fileList = Array.from(this.selectedFiles);
+        
+        try {
+            const response = await fetch('/api/bulk-unarchive', {
+                method: 'POST',
+                headers: {
+                    'X-API-Key': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    files: fileList,
+                    folder: this.currentFolder
+                })
+            });
+
+            if (response.ok) {
+                this.showToast(`${fileList.length} files extracted successfully`, 'success');
+                this.selectedFiles.clear();
+                this.updateBulkActions();
+                this.loadFiles();
+            } else {
+                throw new Error('Extraction failed');
+            }
+        } catch (error) {
+            this.showToast('Extraction error: ' + error.message, 'error');
+        }
     }
 }
 

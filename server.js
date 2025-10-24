@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs-extra');
+const archiver = require('archiver');
+const yauzl = require('yauzl');
 const config = require('./config');
 
 const app = express();
@@ -467,7 +469,155 @@ app.get('/api/files/:filename/public-status', checkPermission('main'), (req, res
   res.json({ isPublic, publicLink: isPublic ? (folder ? `/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}` : `/${encodeURIComponent(filename)}`) : null });
 });
 
+// Bulk delete files
+app.post('/api/bulk-delete', checkPermission('main'), async (req, res) => {
+  try {
+    const { files, folder = '' } = req.body;
+    
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      return res.status(400).json({ error: 'Files array is required' });
+    }
+    
+    const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
+    const results = [];
+    
+    for (const filename of files) {
+      const filePath = path.join(folderPath, filename);
+      
+      if (fs.existsSync(filePath)) {
+        try {
+          await fs.unlink(filePath);
+          results.push({ filename, status: 'deleted' });
+        } catch (error) {
+          results.push({ filename, status: 'error', error: error.message });
+        }
+      } else {
+        results.push({ filename, status: 'not_found' });
+      }
+    }
+    
+    res.json({ 
+      message: 'Bulk delete completed',
+      results: results
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Bulk delete failed' });
+  }
+});
 
+// Bulk archive files
+app.post('/api/bulk-archive', checkPermission('main'), async (req, res) => {
+  try {
+    const { files, folder = '' } = req.body;
+    
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      return res.status(400).json({ error: 'Files array is required' });
+    }
+    
+    const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
+    const archiveName = `archive_${Date.now()}.zip`;
+    const archivePath = path.join(folderPath, archiveName);
+    
+    // Create archive
+    const output = fs.createWriteStream(archivePath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    
+    output.on('close', () => {
+      res.json({
+        message: 'Archive created successfully',
+        archiveName: archiveName,
+        size: archive.pointer()
+      });
+    });
+    
+    archive.on('error', (err) => {
+      throw err;
+    });
+    
+    archive.pipe(output);
+    
+    // Add files to archive
+    for (const filename of files) {
+      const filePath = path.join(folderPath, filename);
+      if (fs.existsSync(filePath)) {
+        archive.file(filePath, { name: filename });
+      }
+    }
+    
+    await archive.finalize();
+  } catch (error) {
+    res.status(500).json({ error: 'Archive creation failed: ' + error.message });
+  }
+});
+
+// Bulk unarchive files
+app.post('/api/bulk-unarchive', checkPermission('main'), async (req, res) => {
+  try {
+    const { files, folder = '' } = req.body;
+    
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      return res.status(400).json({ error: 'Files array is required' });
+    }
+    
+    const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
+    const results = [];
+    
+    for (const filename of files) {
+      const filePath = path.join(folderPath, filename);
+      
+      if (fs.existsSync(filePath) && path.extname(filename).toLowerCase() === '.zip') {
+        try {
+          await new Promise((resolve, reject) => {
+            yauzl.open(filePath, { lazyEntries: true }, (err, zipfile) => {
+              if (err) return reject(err);
+              
+              zipfile.readEntry();
+              zipfile.on('entry', (entry) => {
+                if (/\/$/.test(entry.fileName)) {
+                  // Directory entry
+                  zipfile.readEntry();
+                } else {
+                  // File entry
+                  zipfile.openReadStream(entry, (err, readStream) => {
+                    if (err) return reject(err);
+                    
+                    const extractPath = path.join(folderPath, entry.fileName);
+                    const extractDir = path.dirname(extractPath);
+                    
+                    fs.ensureDirSync(extractDir);
+                    
+                    const writeStream = fs.createWriteStream(extractPath);
+                    readStream.pipe(writeStream);
+                    
+                    writeStream.on('close', () => {
+                      zipfile.readEntry();
+                    });
+                  });
+                }
+              });
+              
+              zipfile.on('end', () => {
+                results.push({ filename, status: 'extracted' });
+                resolve();
+              });
+            });
+          });
+        } catch (error) {
+          results.push({ filename, status: 'error', error: error.message });
+        }
+      } else {
+        results.push({ filename, status: 'not_found_or_not_zip' });
+      }
+    }
+    
+    res.json({
+      message: 'Bulk unarchive completed',
+      results: results
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Bulk unarchive failed: ' + error.message });
+  }
+});
 
 // Start server
 app.listen(config.PORT, () => {
