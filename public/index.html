@@ -38,13 +38,21 @@
                     <span>xCloud</span>
                 </a>
                 <div class="header-actions">
-                    <button class="btn btn-glass" id="createFolderBtn">
+                    <button class="btn btn-glass" id="createFolderBtn" data-tooltip="New Folder">
                         <i class="fas fa-folder-plus"></i>
-                        New Folder
+                        <span>New Folder</span>
                     </button>
-                    <button class="btn btn-primary" id="uploadBtn">
+                    <button class="btn btn-primary" id="uploadBtn" data-tooltip="Upload File">
                         <i class="fas fa-upload"></i>
-                        Upload File
+                        <span>Upload File</span>
+                    </button>
+                    <button class="btn btn-glass" id="refreshBtn" data-tooltip="Refresh">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Refresh</span>
+                    </button>
+                    <button class="btn btn-glass" id="logoutBtn" data-tooltip="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
                     </button>
                 </div>
             </div>
@@ -127,14 +135,6 @@
                     <div class="section-header">
                         <h2 id="sectionTitle">Files</h2>
                         <div class="section-actions">
-                            <button class="btn btn-glass" id="refreshBtn">
-                                <i class="fas fa-sync-alt"></i>
-                                Refresh
-                            </button>
-                            <button class="btn btn-glass" id="logoutBtn">
-                                <i class="fas fa-sign-out-alt"></i>
-                                Logout
-                            </button>
                             <!-- Bulk action buttons (hidden by default) -->
                             <div class="bulk-actions" id="bulkActions" style="display: none;">
                                 <button class="btn btn-glass" id="selectAllBtn">
