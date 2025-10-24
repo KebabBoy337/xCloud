@@ -262,10 +262,10 @@ app.get('/api/files', checkPermission('main'), async (req, res) => {
   }
 });
 
-// Search files by date/time
+// Search files by date
 app.get('/api/files/search', checkPermission('main'), async (req, res) => {
   try {
-    const { date, hour, folder = '' } = req.query;
+    const { date, folder = '' } = req.query;
     
     if (!date) {
       return res.status(400).json({ error: 'Date parameter is required' });
@@ -305,14 +305,7 @@ app.get('/api/files/search', checkPermission('main'), async (req, res) => {
         // Check if file was uploaded on the specified date
         const isOnDate = uploadTime >= startOfDay && uploadTime < endOfDay;
         
-        // If hour is specified, check hour as well
-        let isOnHour = true;
-        if (hour !== undefined) {
-          const fileHour = uploadTime.getHours();
-          isOnHour = fileHour === parseInt(hour);
-        }
-        
-        if (isOnDate && isOnHour) {
+        if (isOnDate) {
           // Determine display name
           let displayName = item;
           if (item.includes('-') && item.length > 36) {
@@ -339,8 +332,7 @@ app.get('/api/files/search', checkPermission('main'), async (req, res) => {
       files: fileList, 
       folders: folderList,
       currentFolder: folder,
-      searchDate: date,
-      searchHour: hour
+      searchDate: date
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to search files' });

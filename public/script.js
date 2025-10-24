@@ -301,16 +301,8 @@ class xCloudStorage {
 
         // Date search input Enter key
         const dateSearchInput = document.getElementById('dateSearchInput');
-        const hourSearchInput = document.getElementById('hourSearchInput');
         if (dateSearchInput) {
             dateSearchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.performDateSearch();
-                }
-            });
-        }
-        if (hourSearchInput) {
-            hourSearchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     this.performDateSearch();
                 }
@@ -899,16 +891,13 @@ class xCloudStorage {
         });
     }
 
-    async searchFilesByDate(date, hour = null) {
+    async searchFilesByDate(date) {
         if (!this.apiKey) return;
 
         this.showLoading(true);
 
         try {
             let url = `/api/files/search?date=${encodeURIComponent(date)}`;
-            if (hour !== null) {
-                url += `&hour=${hour}`;
-            }
             if (this.currentFolder) {
                 url += `&folder=${encodeURIComponent(this.currentFolder)}`;
             }
@@ -928,8 +917,7 @@ class xCloudStorage {
                 
                 // Show search results info
                 const dateStr = new Date(date).toLocaleDateString('ru-RU');
-                const hourStr = hour !== null ? ` в ${hour}:00` : '';
-                this.showToast(`Найдено ${this.files.length} файлов за ${dateStr}${hourStr}`, 'info');
+                this.showToast(`Найдено ${this.files.length} файлов за ${dateStr}`, 'info');
             } else {
                 throw new Error('Failed to search files');
             }
@@ -942,28 +930,18 @@ class xCloudStorage {
 
     performDateSearch() {
         const dateInput = document.getElementById('dateSearchInput');
-        const hourInput = document.getElementById('hourSearchInput');
-        
         const date = dateInput.value;
-        const hour = hourInput.value;
         
         if (!date) {
             this.showToast('Выберите дату для поиска', 'error');
             return;
         }
         
-        const hourValue = hour ? parseInt(hour) : null;
-        if (hourValue !== null && (hourValue < 0 || hourValue > 23)) {
-            this.showToast('Час должен быть от 0 до 23', 'error');
-            return;
-        }
-        
-        this.searchFilesByDate(date, hourValue);
+        this.searchFilesByDate(date);
     }
 
     clearDateSearch() {
         document.getElementById('dateSearchInput').value = '';
-        document.getElementById('hourSearchInput').value = '';
         this.loadFiles(); // Reload all files
     }
 
