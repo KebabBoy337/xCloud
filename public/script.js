@@ -4,7 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.0.228'; // Версия приложения
+        this.version = '1.0.229'; // Версия приложения
         console.log('xCloud Storage v' + this.version + ' initialized');
         this.init();
     }
@@ -27,27 +27,21 @@ class xCloudStorage {
 
     async verifyApiKey(apiKey) {
         try {
-            console.log('Verifying API key:', apiKey);
             const response = await fetch('/api/health', {
                 headers: {
                     'X-API-Key': apiKey
                 }
             });
 
-            console.log('Health check response:', response.status, response.statusText);
-            
             if (response.ok) {
                 this.showMainContent();
                 this.loadFiles();
             } else {
-                const errorText = await response.text();
-                console.log('Health check error:', errorText);
                 // API ключ не работает, очищаем localStorage
                 localStorage.removeItem('xcloud_api_key');
                 this.showLoginScreen();
             }
         } catch (error) {
-            console.log('Network error:', error);
             // Ошибка сети, очищаем localStorage
             localStorage.removeItem('xcloud_api_key');
             this.showLoginScreen();
@@ -260,14 +254,11 @@ class xCloudStorage {
         }
 
         try {
-            console.log('Authenticating with API key:', this.apiKey);
             const response = await fetch('/api/health', {
                 headers: {
                     'X-API-Key': this.apiKey
                 }
             });
-
-            console.log('Auth response:', response.status, response.statusText);
 
             if (response.ok) {
                 // Сохраняем API ключ только если он работает
@@ -276,14 +267,11 @@ class xCloudStorage {
                 this.showMainContent();
                 this.loadFiles();
             } else {
-                const errorText = await response.text();
-                console.log('Auth error response:', errorText);
                 // Очищаем localStorage при неверном ключе
                 localStorage.removeItem('xcloud_api_key');
                 throw new Error('Invalid API key');
             }
         } catch (error) {
-            console.log('Auth error:', error);
             // Очищаем localStorage при ошибке
             localStorage.removeItem('xcloud_api_key');
             this.showToast('Login error: ' + error.message, 'error');

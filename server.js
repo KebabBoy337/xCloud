@@ -108,27 +108,25 @@ app.use(express.static('public', {
 
 // Auth check middleware for all routes except login
 app.use((req, res, next) => {
-  // Allow access to login page, health check, and permanent links
+  // Allow access to login page, health check, and static files
   if (req.path === '/' || 
       req.path === '/api/health' || 
       req.path.startsWith('/public/') ||
       req.path.startsWith('/style.css') ||
       req.path.startsWith('/script.js') ||
       req.path.startsWith('/init.js') ||
-      req.path.startsWith('/favicon.ico') ||
-      // Allow permanent links (files without API key)
-      (req.path.match(/^\/[^\/]+$/) && !req.path.startsWith('/api/')) ||
-      (req.path.match(/^\/[^\/]+\/[^\/]+$/) && !req.path.startsWith('/api/'))) {
+      req.path.startsWith('/favicon.ico')) {
+    return next();
+  }
+  
+  // Allow permanent links (files without API key) - but not API routes
+  if (!req.path.startsWith('/api/') && 
+      (req.path.match(/^\/[^\/]+$/) || req.path.match(/^\/[^\/]+\/[^\/]+$/))) {
     return next();
   }
   
   // Check if user is authenticated
   const apiKey = req.headers['x-api-key'] || req.query.api_key;
-  
-  console.log('Auth check for path:', req.path);
-  console.log('API key provided:', apiKey);
-  console.log('Expected MAIN_API_KEY:', config.MAIN_API_KEY);
-  console.log('Expected UPLOAD_API_KEY:', config.UPLOAD_API_KEY);
   
   if (!apiKey) {
     if (req.path.startsWith('/api/')) {
@@ -139,18 +137,15 @@ app.use((req, res, next) => {
   }
   
   if (apiKey === config.MAIN_API_KEY) {
-    console.log('Main API key matched');
     req.userRole = 'main';
     return next();
   }
   
   if (apiKey === config.UPLOAD_API_KEY) {
-    console.log('Upload API key matched');
     req.userRole = 'upload';
     return next();
   }
   
-  console.log('No API key match found');
   if (req.path.startsWith('/api/')) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
