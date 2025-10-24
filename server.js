@@ -318,7 +318,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     console.log('Files in storage directory:', storageFiles);
     console.log('Looking for similar files:');
     storageFiles.forEach(file => {
-      if (file.toLowerCase().includes('screenshot') || file.toLowerCase().includes('2025-10-17')) {
+      if (file.toLowerCase().includes('screenshot') || file.toLowerCase().includes('2025-01-29')) {
         console.log('Found similar file:', file);
       }
     });
@@ -327,20 +327,21 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   }
   
   // Check for duplicates and add index if needed
+  // Only check for duplicates in the target folder, not globally
   while (true) {
     const targetPath = folder ? path.join(folderPath, finalName) : path.join(config.STORAGE_PATH, finalName);
     
-    console.log('Checking if file exists:', targetPath);
+    console.log('Checking if file exists in target folder:', targetPath);
     console.log('File exists:', fs.existsSync(targetPath));
     
     if (!fs.existsSync(targetPath)) {
-      console.log('File does not exist, using name:', finalName);
-      break; // File doesn't exist, we can use this name
+      console.log('File does not exist in target folder, using name:', finalName);
+      break; // File doesn't exist in target folder, we can use this name
     }
     
-    // File exists, try with index (starting from 1, not 0)
+    // File exists in target folder, try with index (starting from 1, not 0)
     finalName = `${baseName} (${counter})${fileExt}`;
-    console.log('File exists, trying with index:', finalName);
+    console.log('File exists in target folder, trying with index:', finalName);
     counter++;
   }
   
