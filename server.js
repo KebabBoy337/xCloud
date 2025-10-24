@@ -220,6 +220,9 @@ app.get('/api/files', checkPermission('main'), async (req, res) => {
           modified: stats.mtime
         });
       } else {
+        // Debug: Log all files found
+        console.log('API /api/files - Found file:', item);
+        
         // Определяем отображаемое имя файла
         let displayName = item;
         
@@ -228,6 +231,7 @@ app.get('/api/files', checkPermission('main'), async (req, res) => {
           const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/;
           if (uuidPattern.test(item)) {
             displayName = item.replace(uuidPattern, '');
+            console.log('API /api/files - UUID file detected:', item, '-> displayName:', displayName);
           }
         }
         
@@ -320,6 +324,18 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     storageFiles.forEach(file => {
       if (file.toLowerCase().includes('screenshot') || file.toLowerCase().includes('2025-01-29')) {
         console.log('Found similar file:', file);
+      }
+    });
+    
+    // Check if the exact file exists
+    const exactFile = path.join(config.STORAGE_PATH, originalName);
+    console.log('Checking exact file:', exactFile);
+    console.log('Exact file exists:', fs.existsSync(exactFile));
+    
+    // Check for files with similar names
+    storageFiles.forEach(file => {
+      if (file.includes(originalName) || originalName.includes(file)) {
+        console.log('Found similar file name:', file);
       }
     });
   } catch (error) {
