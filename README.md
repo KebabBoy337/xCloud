@@ -126,6 +126,7 @@ xCloud/
 │   └── init.js            # Initialization
 ├── storage/               # File storage (protected)
 └── Important_files/       # Configuration files (protected)
+    ├── prod.env           # Environment configuration
     └── .public_links.json # Public link states
 ```
 

@@ -95,10 +95,15 @@ git reset --hard origin/main
 # Очистка и копирование файлов в продакшн директорию
 print_step "6. Очистка и копирование файлов в /opt/xcloud..."
 
-# Сохраняем важные файлы
-if [ -f "/opt/xcloud/prod.env" ]; then
-    cp /opt/xcloud/prod.env /tmp/prod.env.backup
-    print_status "Сохранен prod.env"
+# Сохраняем важные файлы из Important_files
+if [ -f "/opt/xcloud/Important_files/prod.env" ]; then
+    cp /opt/xcloud/Important_files/prod.env /tmp/prod.env.backup
+    print_status "Сохранен prod.env из Important_files"
+fi
+
+if [ -f "/opt/xcloud/Important_files/.public_links.json" ]; then
+    cp /opt/xcloud/Important_files/.public_links.json /tmp/public_links.json.backup
+    print_status "Сохранен .public_links.json"
 fi
 
 # ВАЖНО: Папка /opt/xcloud/storage содержит файлы пользователей - НЕ УДАЛЯЕМ!
@@ -122,11 +127,23 @@ rm -rf /opt/xcloud/public
 print_status "Копирование файлов (исключая storage и Important_files)..."
 rsync -av --exclude='storage' --exclude='Important_files' --exclude='node_modules' "$SOURCE_DIR"/ /opt/xcloud/
 
-# Восстанавливаем важные файлы
+# Восстанавливаем важные файлы в Important_files
 if [ -f "/tmp/prod.env.backup" ]; then
-    cp /tmp/prod.env.backup /opt/xcloud/prod.env
+    cp /tmp/prod.env.backup /opt/xcloud/Important_files/prod.env
     rm /tmp/prod.env.backup
-    print_status "Восстановлен prod.env"
+    print_status "Восстановлен prod.env в Important_files"
+fi
+
+if [ -f "/tmp/public_links.json.backup" ]; then
+    cp /tmp/public_links.json.backup /opt/xcloud/Important_files/.public_links.json
+    rm /tmp/public_links.json.backup
+    print_status "Восстановлен .public_links.json"
+fi
+
+# Создаем симлинк на prod.env если его нет
+if [ ! -f "/opt/xcloud/prod.env" ] && [ -f "/opt/xcloud/Important_files/prod.env" ]; then
+    ln -s /opt/xcloud/Important_files/prod.env /opt/xcloud/prod.env
+    print_status "Создан симлинк на prod.env"
 fi
 
 # Создаем папку storage если её нет

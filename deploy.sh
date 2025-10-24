@@ -54,13 +54,30 @@ echo "📦 Установка зависимостей..."
 cd /opt/xcloud
 sudo -u xcloud npm install --production
 
-# Создание prod.env
-echo "📝 Создание prod.env..."
+# Создание Important_files директории
+echo "📁 Создание Important_files директории..."
+mkdir -p /opt/xcloud/Important_files
+chown xcloud:xcloud /opt/xcloud/Important_files
+chmod 755 /opt/xcloud/Important_files
+
+# Создание prod.env в Important_files
+echo "📝 Создание prod.env в Important_files..."
+if [ ! -f "/opt/xcloud/Important_files/prod.env" ]; then
+    cp /opt/xcloud/example.env /opt/xcloud/Important_files/prod.env
+    chown xcloud:xcloud /opt/xcloud/Important_files/prod.env
+    chmod 644 /opt/xcloud/Important_files/prod.env
+    echo "✅ prod.env создан в Important_files"
+else
+    echo "ℹ️  prod.env уже существует в Important_files"
+fi
+
+# Создание симлинка на prod.env
+echo "🔗 Создание симлинка на prod.env..."
 if [ ! -f "/opt/xcloud/prod.env" ]; then
-    cp /opt/xcloud/example.env /opt/xcloud/prod.env
-    chown xcloud:xcloud /opt/xcloud/prod.env
-    echo "⚠️  ВАЖНО: Измените API ключи в /opt/xcloud/prod.env!"
-    echo "   nano /opt/xcloud/prod.env"
+    ln -s /opt/xcloud/Important_files/prod.env /opt/xcloud/prod.env
+    echo "✅ Симлинк создан: /opt/xcloud/prod.env -> Important_files/prod.env"
+else
+    echo "ℹ️  Симлинк уже существует"
 fi
 
 # Создание systemd сервиса (без PM2)
@@ -156,6 +173,25 @@ echo "🎉 Деплой завершен!"
 echo "🌐 Приложение: https://cloud.l0.mom"
 echo "📋 Логи: journalctl -u xcloud -f"
 echo ""
-echo "⚠️  ВАЖНО: Измените API ключи в /opt/xcloud/prod.env!"
-echo "   nano /opt/xcloud/prod.env"
-echo "   systemctl restart xcloud"
+echo "🔧 НАСТРОЙКА API КЛЮЧЕЙ:"
+echo "========================"
+echo "1. Отредактируйте API ключи:"
+echo "   sudo nano /opt/xcloud/Important_files/prod.env"
+echo ""
+echo "2. Измените следующие строки:"
+echo "   MAIN_API_KEY=your_secure_main_key_here"
+echo "   UPLOAD_API_KEY=your_secure_upload_key_here"
+echo ""
+echo "3. Перезапустите сервис:"
+echo "   sudo systemctl restart xcloud"
+echo ""
+echo "4. Проверьте статус:"
+echo "   sudo systemctl status xcloud"
+echo ""
+echo "📁 ФАЙЛЫ КОНФИГУРАЦИИ:"
+echo "======================"
+echo "• prod.env: /opt/xcloud/Important_files/prod.env"
+echo "• .public_links.json: /opt/xcloud/Important_files/.public_links.json"
+echo "• storage: /opt/xcloud/storage/"
+echo ""
+echo "⚠️  ВАЖНО: Измените API ключи перед использованием!"
