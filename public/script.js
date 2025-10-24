@@ -97,7 +97,7 @@ class xCloudStorage {
         const refreshBtn = document.getElementById('refreshBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
-                this.loadFiles();
+                this.loadFiles(true); // Принудительное обновление
             });
         }
 
@@ -463,7 +463,7 @@ class xCloudStorage {
         }
     }
 
-    async loadFiles() {
+    async loadFiles(forceRefresh = false) {
         if (!this.apiKey) return;
 
         this.showLoading(true);
@@ -473,9 +473,9 @@ class xCloudStorage {
                 `/api/files?folder=${encodeURIComponent(this.currentFolder)}` : 
                 '/api/files';
             
-            // Проверяем кэш API
+            // Проверяем кэш API только если не принудительное обновление
             const cacheKey = url;
-            if (this.apiCache.has(cacheKey)) {
+            if (!forceRefresh && this.apiCache.has(cacheKey)) {
                 const cachedData = this.apiCache.get(cacheKey);
                 this.files = cachedData.files || [];
                 this.folders = cachedData.folders || [];
@@ -783,12 +783,12 @@ class xCloudStorage {
 
     navigateToFolder(folderName) {
         this.currentFolder = folderName;
-        this.loadFiles();
+        this.loadFiles(true); // Принудительное обновление при навигации
     }
 
     navigateToHome() {
         this.currentFolder = '';
-        this.loadFiles();
+        this.loadFiles(true); // Принудительное обновление при навигации
     }
 
     openCreateFolderModal() {
@@ -835,7 +835,7 @@ class xCloudStorage {
             if (response.ok) {
                 this.showToast('Folder created successfully', 'success');
                 this.closeCreateFolderModal();
-                this.loadFiles();
+                this.loadFiles(true); // Принудительное обновление после создания
             } else {
                 const error = await response.json();
                 throw new Error(error.error || 'Failed to create folder');
@@ -1150,7 +1150,7 @@ class xCloudStorage {
         document.getElementById('dateSearchInput').value = '';
         document.getElementById('searchInput').value = '';
         this.currentTextSearch = '';
-        this.loadFiles();
+        this.loadFiles(true); // Принудительное обновление при очистке поиска
     }
 
     openUploadModal() {
@@ -1321,7 +1321,7 @@ class xCloudStorage {
             }
             
             this.closeUploadModal();
-            this.loadFiles();
+            this.loadFiles(true); // Принудительное обновление после загрузки
         } catch (error) {
             this.showToast('Upload error: ' + error.message, 'error');
         } finally {
@@ -1494,7 +1494,7 @@ class xCloudStorage {
                 this.selectedFiles.clear();
                 this.selectedFolders.clear();
                 this.updateBulkActions();
-                this.loadFiles();
+                this.loadFiles(true); // Принудительное обновление после создания архива
             } else {
                 throw new Error('Archive creation failed');
             }
@@ -1538,7 +1538,7 @@ class xCloudStorage {
             this.selectedFiles.clear();
             this.selectedFolders.clear();
             this.updateBulkActions();
-            this.loadFiles();
+            this.loadFiles(true); // Принудительное обновление после массового удаления
         } catch (error) {
             this.showToast('Bulk delete error: ' + error.message, 'error');
         }
@@ -1580,7 +1580,7 @@ class xCloudStorage {
 
         if (response.ok) {
             this.showToast('File deleted', 'success');
-            this.loadFiles();
+            this.loadFiles(true); // Принудительное обновление после удаления
         } else {
             throw new Error('Delete failed');
         }
@@ -1606,7 +1606,7 @@ class xCloudStorage {
 
             if (response.ok) {
                 this.showToast('Folder deleted', 'success');
-                this.loadFiles();
+                this.loadFiles(true); // Принудительное обновление после удаления
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || 'Delete failed');
@@ -1801,7 +1801,7 @@ class xCloudStorage {
 
             if (response.ok) {
                 this.showToast(`Archive "${filename}" extracted successfully`, 'success');
-                this.loadFiles();
+                this.loadFiles(true); // Принудительное обновление после извлечения
             } else {
                 throw new Error('Extraction failed');
             }
@@ -1835,7 +1835,7 @@ class xCloudStorage {
                 this.showToast(`${fileList.length} files extracted successfully`, 'success');
                 this.selectedFiles.clear();
                 this.updateBulkActions();
-                this.loadFiles();
+                this.loadFiles(true); // Принудительное обновление после массового извлечения
             } else {
                 throw new Error('Extraction failed');
             }
