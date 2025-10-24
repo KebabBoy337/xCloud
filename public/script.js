@@ -4,8 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.0.232'; // Версия приложения
-        console.log('xCloud Storage v' + this.version + ' initialized');
+        this.version = '1.0.233'; // Версия приложения
         this.init();
     }
 
@@ -326,8 +325,6 @@ class xCloudStorage {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('Files loaded:', data.files);
-                console.log('Folders loaded:', data.folders);
                 this.files = data.files || [];
                 this.folders = data.folders || [];
                 this.currentFolder = data.currentFolder || '';
@@ -339,7 +336,6 @@ class xCloudStorage {
                 throw new Error('Failed to load files');
             }
         } catch (error) {
-            console.error('Error loading files:', error);
             this.showToast('Failed to load files: ' + error.message, 'error');
         } finally {
             this.showLoading(false);
@@ -690,7 +686,7 @@ class xCloudStorage {
                     this.updateFilePublicStatus(file.name, data.isPublic);
                 }
             } catch (error) {
-                console.log('Failed to load public status for', file.name);
+                // Silent fail for public status
             }
         }
     }
@@ -745,17 +741,6 @@ class xCloudStorage {
         if (modal) {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            console.log('Upload modal opened');
-            
-            // Ensure file input is accessible
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput) {
-                console.log('File input found and accessible');
-            } else {
-                console.error('File input not found when opening modal');
-            }
-        } else {
-            console.error('Upload modal not found');
         }
     }
 
@@ -798,7 +783,6 @@ class xCloudStorage {
         if (files.length === 0) return;
 
         const file = files[0];
-        console.log('File selected:', file.name, 'Size:', file.size);
         
         // Store the file reference for later use
         this.selectedFile = file;
@@ -806,7 +790,6 @@ class xCloudStorage {
         const startUploadBtn = document.getElementById('startUpload');
         if (startUploadBtn) {
             startUploadBtn.disabled = false;
-            console.log('Upload button enabled for file:', file.name);
         }
         
         // Show file info - but preserve the file input
@@ -831,43 +814,31 @@ class xCloudStorage {
     }
 
     async startUpload() {
-        console.log('startUpload called');
-        
         // Debug: Check if modal is visible
         const modal = document.getElementById('uploadModal');
         if (!modal || !modal.classList.contains('active')) {
             this.showToast('Upload modal is not open', 'error');
-            console.log('Modal not active');
             return;
         }
 
         const fileInput = document.getElementById('fileInput');
-        console.log('File input element:', fileInput);
         
         if (!fileInput) {
             this.showToast('File input not found', 'error');
-            console.error('File input element not found');
-            console.log('Available elements:', document.querySelectorAll('input[type="file"]'));
             return;
         }
         
-        console.log('File input found, files:', fileInput.files);
         let file = fileInput.files[0];
 
         // Fallback: use stored file reference if fileInput doesn't have files
         if (!file && this.selectedFile) {
-            console.log('Using stored file reference:', this.selectedFile.name);
             file = this.selectedFile;
         }
 
         if (!file) {
             this.showToast('Select a file', 'error');
-            console.log('No file selected');
             return;
         }
-
-        console.log('Starting upload for file:', file.name);
-        console.log('File size:', file.size, 'bytes');
 
         // Проверяем размер файла (500MB = 500 * 1024 * 1024 bytes)
         const maxSize = 500 * 1024 * 1024; // 500MB

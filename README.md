@@ -1,10 +1,14 @@
 # xCloud Storage
 
-Modern file storage with beautiful glass interface in dark tones.
+Modern file storage with beautiful glass interface, folder support, and public links.
+
+**Version:** 1.0.233
 
 ## 🚀 Features
 
 - **Modern Glass UI** - Beautiful interface in dark tones with glass effects
+- **Folder Support** - Create and manage folders for organized storage
+- **Public Links** - Generate permanent download links for files
 - **Two-level Authorization** - Main key (full rights) and Upload key (upload only)
 - **Drag & Drop** - Convenient file upload by dragging
 - **Security** - Rate limiting, CORS, Helmet protection
@@ -49,16 +53,27 @@ After deployment, the application will be available at `https://cloud.l0.mom`
 
 ## 🛠 API Endpoints
 
-### Main endpoints
+### File Management
+- `GET /api/files` - List files and folders (requires Main Key)
+- `POST /api/upload` - Upload file (requires any key)
+- `GET /api/files/:filename` - Download file (requires Main Key)
+- `DELETE /api/files/:filename` - Delete file (requires Main Key)
 
-- `GET /api/files` - File list (requires Main Key)
-- `POST /api/upload` - File upload (requires any key)
-- `GET /api/download/:filename` - File download (requires Main Key)
-- `DELETE /api/files/:filename` - File deletion (requires Main Key)
+### Folder Management
+- `POST /api/folders` - Create folder (requires Main Key)
+- `DELETE /api/folders/:foldername` - Delete folder (requires Main Key)
 
-### System endpoints
+### Public Links
+- `POST /api/files/:filename/make-public` - Make file public (requires Main Key)
+- `POST /api/files/:filename/make-private` - Make file private (requires Main Key)
+- `GET /api/files/:filename/public-status` - Check public status (requires Main Key)
+- `GET /:folder/:filename` - Download public file (no auth required)
+- `GET /:filename` - Download public file (no auth required)
 
-- `GET /api/health` - Health check
+### System
+- `GET /api/health` - Health check (no auth required)
+
+> 📖 **Full API Documentation**: See [API.md](API.md) for complete endpoint details
 
 ## 🔧 Configuration
 
@@ -97,13 +112,21 @@ xCloud/
 ├── package.json           # Dependencies
 ├── ecosystem.config.js    # PM2 configuration
 ├── deploy.sh              # Deployment script
+├── update.sh              # Update script
+├── cleanup.sh             # Cleanup script
 ├── example.env            # Environment template
 ├── prod.env               # Production environment (not in git)
+├── API.md                 # API documentation
+├── README.md              # This file
+├── USAGE.md               # Usage guide
 ├── public/                # Static files
 │   ├── index.html         # Main page
 │   ├── style.css          # Styles
-│   └── script.js          # JavaScript
-└── storage/               # File storage
+│   ├── script.js          # JavaScript
+│   └── init.js            # Initialization
+├── storage/               # File storage (protected)
+└── Important_files/       # Configuration files (protected)
+    └── .public_links.json # Public link states
 ```
 
 ## 🔒 Security

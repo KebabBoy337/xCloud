@@ -67,7 +67,7 @@ try {
     publicLinks = JSON.parse(fs.readFileSync(PUBLIC_LINKS_FILE, 'utf8'));
   }
 } catch (error) {
-  console.log('No public links file found, starting fresh');
+  // Starting fresh if no public links file
 }
 
 // Save public links
@@ -75,7 +75,7 @@ const savePublicLinks = () => {
   try {
     fs.writeFileSync(PUBLIC_LINKS_FILE, JSON.stringify(publicLinks, null, 2));
   } catch (error) {
-    console.error('Failed to save public links:', error);
+    // Failed to save public links
   }
 };
 
