@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# xCloud Storage - Complete Cleanup Script
+# xCloud Storage - Complete Cleanup Script v1.0.3 Stable
 # This script will remove all xCloud files, systemd services, and configurations
 
-echo "🧹 xCloud Storage - Complete Cleanup"
-echo "======================================"
+echo "🧹 xCloud Storage v1.0.3 Stable - Complete Cleanup"
+echo "=================================================="
 
 # Colors for output
 RED='\033[0;31m'
@@ -30,17 +30,8 @@ if [[ $EUID -eq 0 ]]; then
     print_warning "Running as root. This will remove system-wide installations."
 fi
 
-# Stop and remove PM2 processes (if any)
-print_status "Stopping PM2 processes (if any)..."
-if command -v pm2 &> /dev/null; then
-    pm2 stop xcloud-storage 2>/dev/null || true
-    pm2 delete xcloud-storage 2>/dev/null || true
-    pm2 kill 2>/dev/null || true
-    pm2 save 2>/dev/null || true
-    print_status "PM2 processes stopped and removed"
-else
-    print_warning "PM2 not found, skipping PM2 cleanup"
-fi
+# Note: PM2 is not used in v1.0.3 Stable - using systemd instead
+print_status "Skipping PM2 cleanup (not used in v1.0.3 Stable)..."
 
 # Stop and disable systemd service
 print_status "Stopping systemd service..."
@@ -69,13 +60,22 @@ else
     print_warning "Application directory not found: /opt/xcloud"
 fi
 
-# Remove storage directory
+# Remove storage directory (if exists separately)
 print_status "Removing storage directory..."
 if [ -d "/opt/xcloud/storage" ]; then
     sudo rm -rf /opt/xcloud/storage
     print_status "Storage directory removed"
 else
     print_warning "Storage directory not found"
+fi
+
+# Remove Important_files directory (configuration files)
+print_status "Removing Important_files directory..."
+if [ -d "/opt/xcloud/Important_files" ]; then
+    sudo rm -rf /opt/xcloud/Important_files
+    print_status "Important_files directory removed"
+else
+    print_warning "Important_files directory not found"
 fi
 
 # Remove from PATH (if added)
@@ -100,6 +100,8 @@ print_status "Log files removed"
 # Remove any backup files
 print_status "Removing backup files..."
 sudo rm -f /opt/xcloud-storage-backup-*.tar.gz 2>/dev/null || true
+sudo rm -f /tmp/prod.env.backup 2>/dev/null || true
+sudo rm -f /tmp/public_links.json.backup 2>/dev/null || true
 print_status "Backup files removed"
 
 # Clean up any remaining files in /tmp
@@ -118,10 +120,8 @@ unset XCLOUD_API_KEY 2>/dev/null || true
 unset XCLOUD_PORT 2>/dev/null || true
 print_status "Environment variables cleaned"
 
-# Remove any remaining PM2 configurations
-print_status "Cleaning PM2 configurations..."
-pm2 kill 2>/dev/null || true
-print_status "PM2 configurations cleaned"
+# Note: PM2 configurations not needed in v1.0.3 Stable
+print_status "Skipping PM2 configurations (not used in v1.0.3 Stable)..."
 
 # Remove any remaining Node.js modules (if in global location)
 print_status "Cleaning Node.js modules..."
@@ -150,7 +150,18 @@ print_status "Removing symlinks..."
 sudo rm -f /usr/local/bin/xcloud 2>/dev/null || true
 sudo rm -f /usr/bin/xcloud 2>/dev/null || true
 sudo rm -f /usr/local/bin/xcloud-ssl 2>/dev/null || true
+# Remove symlink to prod.env if exists
+sudo rm -f /opt/xcloud/prod.env 2>/dev/null || true
 print_status "Symlinks removed"
+
+# Remove xcloud user (if created)
+print_status "Removing xcloud user..."
+if id "xcloud" &>/dev/null; then
+    sudo userdel -r xcloud 2>/dev/null || true
+    print_status "xcloud user removed"
+else
+    print_warning "xcloud user not found"
+fi
 
 # Final cleanup
 print_status "Performing final cleanup..."
@@ -159,25 +170,32 @@ sudo apt-get autoclean 2>/dev/null || true
 print_status "Final cleanup completed"
 
 echo ""
-echo "🎉 xCloud Storage - Complete Cleanup Finished!"
-echo "=============================================="
+echo "🎉 xCloud Storage v1.0.3 Stable - Complete Cleanup Finished!"
+echo "============================================================"
 echo ""
 echo "✅ Removed:"
-echo "   - PM2 processes and configurations"
 echo "   - Systemd service and files"
 echo "   - Application directory (/opt/xcloud)"
 echo "   - Storage files and backups"
+echo "   - Important_files directory (configuration files)"
 echo "   - Nginx configuration and SSL certificates"
 echo "   - Log files and temporary files"
 echo "   - Cron jobs and environment variables"
 echo "   - Node.js modules and symlinks"
+echo "   - Backup files (prod.env, .public_links.json)"
+echo "   - xcloud user account"
 echo ""
 echo "⚠️  Note: This script removed ALL xCloud-related files and configurations."
+echo "   This includes:"
+echo "   - All user files in /opt/xcloud/storage/"
+echo "   - All configuration files in /opt/xcloud/Important_files/"
+echo "   - All application code and settings"
+echo ""
 echo "   If you want to reinstall, you'll need to run the deploy script again."
 echo ""
 echo "🔍 To verify cleanup, run:"
-echo "   pm2 list"
 echo "   systemctl status xcloud"
 echo "   ls -la /opt/xcloud"
 echo "   sudo certbot certificates"
+echo "   ls -la /opt/xcloud/Important_files"
 echo ""
