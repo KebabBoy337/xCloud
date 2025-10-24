@@ -561,17 +561,10 @@ body {
 }
 
 .file-meta {
-    display: flex;
-    gap: 1rem;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-}
-
-.file-upload-time {
     color: var(--text-muted);
     font-size: 0.75rem;
     margin-top: 0.25rem;
-    font-style: italic;
+    line-height: 1.2;
 }
 
 .file-actions {

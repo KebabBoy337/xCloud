@@ -549,8 +549,7 @@ class xCloudStorage {
         const displayName = file.displayName || file.name;
         const fileIcon = this.getFileIcon(displayName);
         const fileSize = this.formatFileSize(file.size);
-        const createdDate = new Date(file.created).toLocaleDateString('ru-RU');
-        const uploadTime = file.uploadTime ? new Date(file.uploadTime).toLocaleString('ru-RU') : createdDate;
+        const uploadTime = file.uploadTime ? new Date(file.uploadTime).toLocaleString('en-US') : new Date(file.created).toLocaleString('en-US');
         
         return `
             <div class="file-item" data-filename="${file.name}">
@@ -564,10 +563,8 @@ class xCloudStorage {
                 <div class="file-info">
                     <div class="file-name" title="${displayName}">${displayName}</div>
                     <div class="file-meta">
-                        <span>${fileSize}</span>
-                        <span>${createdDate}</span>
+                        <span>${fileSize} • Uploaded: ${uploadTime}</span>
                     </div>
-                    <div class="file-upload-time">Загружен: ${uploadTime}</div>
                 </div>
                 <div class="file-actions">
                     <div class="file-controls">
