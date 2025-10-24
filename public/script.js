@@ -4,7 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.0.4'; // Версия приложения
+        this.version = '1.4.1'; // Версия приложения
         this.selectedFiles = new Set(); // Для отслеживания выбранных файлов
         this.selectedFolders = new Set(); // Для отслеживания выбранных папок
         this.init();
@@ -354,8 +354,11 @@ class xCloudStorage {
                     const folderName = e.target.closest('.folder-item').dataset.folder;
                     this.navigateToFolder(folderName);
                 } else if (e.target.closest('.delete-btn') && e.target.closest('.folder-item')) {
-                    const folderName = e.target.closest('.folder-item').dataset.folder;
-                    this.deleteFolder(folderName);
+                    const folderItem = e.target.closest('.folder-item');
+                    const folderName = folderItem.dataset.folder;
+                    if (folderName) {
+                        this.deleteFolder(folderName);
+                    }
                 }
             });
         }

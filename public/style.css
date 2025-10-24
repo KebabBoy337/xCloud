@@ -1489,17 +1489,17 @@ body {
 
 /* File item with checkbox - glass card styles */
 .file-item {
-    display: flex;
+    display: flex !important;
     align-items: center;
     padding: 1rem;
-    background: var(--glass-bg);
+    background: var(--glass-bg) !important;
     backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 1rem;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 1rem !important;
     margin-bottom: 0.75rem;
     transition: all 0.3s ease;
     position: relative;
-    box-shadow: var(--glass-shadow);
+    box-shadow: var(--glass-shadow) !important;
     cursor: pointer;
 }
 
