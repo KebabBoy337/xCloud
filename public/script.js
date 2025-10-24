@@ -769,7 +769,7 @@ class xCloudStorage {
         let currentPath = '';
         folderParts.forEach((part, index) => {
             currentPath += (currentPath ? '/' : '') + part;
-            html += `<button class="breadcrumb-item" data-folder="${currentPath}"><i class="fas fa-folder"></i><span>${part}</span></button>`;
+            html += `<span class="breadcrumb-separator">/</span><button class="breadcrumb-item" data-folder="${currentPath}"><i class="fas fa-folder"></i><span>${part}</span></button>`;
         });
         
         // Обновляем кэш
