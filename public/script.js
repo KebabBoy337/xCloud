@@ -324,8 +324,11 @@ class xCloudStorage {
                     const filename = e.target.closest('.download-btn').dataset.filename;
                     this.downloadFile(filename);
                 } else if (e.target.closest('.delete-btn')) {
-                    const filename = e.target.closest('.delete-btn').dataset.filename;
-                    this.deleteFile(filename);
+                    const deleteBtn = e.target.closest('.delete-btn');
+                    const filename = deleteBtn.dataset.filename;
+                    if (filename) {
+                        this.deleteFile(filename);
+                    }
                 } else if (e.target.closest('.copy-link-btn')) {
                     const filename = e.target.closest('.copy-link-btn').dataset.filename;
                     this.copyPublicLink(filename);
