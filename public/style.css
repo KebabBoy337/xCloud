@@ -522,6 +522,7 @@ body {
     justify-content: center;
     color: white;
     font-size: 1rem;
+    margin-right: 1.5rem;
 }
 
 .file-info {
@@ -1487,19 +1488,19 @@ body {
     box-shadow: 0 4px 12px var(--accent-glow);
 }
 
-/* File item with checkbox - glass card styles */
+/* File item with checkbox - transparent glass styles */
 .file-item {
     display: flex !important;
     align-items: center;
     padding: 1rem;
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border) !important;
-    border-radius: 1rem !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 0.75rem !important;
     margin-bottom: 0.75rem;
     transition: all 0.3s ease;
     position: relative;
-    box-shadow: var(--glass-shadow) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
     cursor: pointer;
 }
 
@@ -1522,6 +1523,16 @@ body {
     font-size: 0.875rem;
     margin-top: 0.5rem;
     font-style: italic;
+}
+
+/* Hide extract button by default, show on hover */
+.unarchive-btn {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.file-item:hover .unarchive-btn {
+    opacity: 1;
 }
 
 /* Responsive Design */
