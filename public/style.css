@@ -1176,65 +1176,18 @@ body {
     font-size: 0.8rem;
 }
 
-/* Folder Items - Same as File Items */
+/* Folder Items - Use same styles as File Items */
 .folder-item {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    margin-bottom: 0.75rem;
-    transition: all 0.3s ease;
-    cursor: pointer;
+    /* Inherits all styles from .file-item */
 }
 
-.folder-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: var(--accent-color);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.15);
-}
-
-.folder-item .file-icon {
+.folder-item .file-icon.folder {
     background: linear-gradient(135deg, #ffa726, #ff9800);
     color: #fff;
-    margin-right: 1rem;
-    flex-shrink: 0;
 }
 
-.folder-item .file-icon i {
+.folder-item .file-icon.folder i {
     color: #fff;
-}
-
-.folder-item .file-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.folder-item .file-name {
-    font-weight: 500;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
-}
-
-.folder-item .file-meta {
-    display: flex;
-    gap: 1rem;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-}
-
-.folder-item .file-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.folder-item .file-buttons {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
 }
 
 /* Version Info */
@@ -1466,27 +1419,6 @@ body {
     box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
 }
 
-/* Folder Delete Button - Same as File Delete Button */
-.folder-delete-btn {
-    background: var(--danger-color);
-    color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.9rem;
-}
-
-.folder-delete-btn:hover {
-    background: #e63946;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
-}
 
 /* Responsive Design */
 @media (max-width: 768px) {

@@ -251,11 +251,11 @@ class xCloudStorage {
                     } else {
                         this.makeFilePrivate(filename);
                     }
-                } else if (e.target.closest('.folder-item') && !e.target.closest('.folder-delete-btn')) {
+                } else if (e.target.closest('.folder-item') && !e.target.closest('.delete-btn')) {
                     const folderName = e.target.closest('.folder-item').dataset.folder;
                     this.navigateToFolder(folderName);
-                } else if (e.target.closest('.folder-delete-btn')) {
-                    const folderName = e.target.closest('.folder-delete-btn').dataset.folder;
+                } else if (e.target.closest('.delete-btn') && e.target.closest('.folder-item')) {
+                    const folderName = e.target.closest('.folder-item').dataset.folder;
                     this.deleteFolder(folderName);
                 }
             });
@@ -379,7 +379,7 @@ class xCloudStorage {
         const createdDate = new Date(folder.created).toLocaleDateString('ru-RU');
         
         return `
-            <div class="folder-item" data-folder="${folder.name}">
+            <div class="file-item folder-item" data-folder="${folder.name}">
                 <div class="file-icon folder">
                     <i class="fas fa-folder"></i>
                 </div>
@@ -391,11 +391,9 @@ class xCloudStorage {
                     </div>
                 </div>
                 <div class="file-actions">
-                    <div class="file-buttons">
-                        <button class="file-action danger folder-delete-btn" data-folder="${folder.name}" title="Delete Folder">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                    <button class="file-action danger delete-btn" data-folder="${folder.name}" title="Delete Folder">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
         `;
