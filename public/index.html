@@ -38,7 +38,12 @@
                     <span>xCloud</span>
                 </div>
                 <div class="header-actions">
+                    <button class="btn btn-glass" id="createFolderBtn">
+                        <i class="fas fa-folder-plus"></i>
+                        New Folder
+                    </button>
                     <button class="btn btn-primary" id="uploadBtn">
+                        <i class="fas fa-upload"></i>
                         Upload File
                     </button>
                 </div>
@@ -109,10 +114,18 @@
                     </div>
                 </div>
 
+                <!-- Breadcrumb Navigation -->
+                <div class="breadcrumb" id="breadcrumb">
+                    <button class="breadcrumb-item" data-folder="">
+                        <i class="fas fa-home"></i>
+                        <span>Root</span>
+                    </button>
+                </div>
+
                 <!-- File List -->
                 <div class="file-section">
                     <div class="section-header">
-                        <h2>Files</h2>
+                        <h2 id="sectionTitle">Files</h2>
                         <div class="section-actions">
                             <button class="btn btn-glass" id="refreshBtn">
                                 <i class="fas fa-sync-alt"></i>
@@ -172,6 +185,28 @@
             </div>
         </div>
 
+        <!-- Create Folder Modal -->
+        <div class="modal" id="createFolderModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Create New Folder</h3>
+                    <button class="close-btn" id="closeFolderModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <label for="folderName">Folder Name</label>
+                        <input type="text" id="folderName" placeholder="Enter folder name" class="glass-input">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-glass" id="cancelCreateFolder">Cancel</button>
+                    <button class="btn btn-primary" id="createFolder">Create Folder</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading Overlay -->
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-spinner">
@@ -181,10 +216,15 @@
 
         <!-- Toast Notifications -->
         <div class="toast-container" id="toastContainer"></div>
+        
+        <!-- Version Info -->
+        <div class="version-info">
+            <span>v1.0.228</span>
+        </div>
     </div>
 
-    <script src="script.js?v=1.1.0"></script>
-    <script src="init.js?v=1.1.0"></script>
+    <script src="script.js?v=1.0.228"></script>
+    <script src="init.js?v=1.0.228"></script>
     
     <!-- Fallback JavaScript for Ubuntu deployment -->
     <script>

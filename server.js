@@ -53,10 +53,13 @@ app.use('/api/', limiter);
 // Ensure storage directory exists
 fs.ensureDirSync(config.STORAGE_PATH);
 
-// Multer configuration for file uploads
+// Multer configuration for file uploads with folder support
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, config.STORAGE_PATH);
+    const folder = req.body.folder || '';
+    const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
+    fs.ensureDirSync(folderPath);
+    cb(null, folderPath);
   },
   filename: (req, file, cb) => {
     // Получаем имя файла без расширения и расширение отдельно
@@ -140,53 +143,116 @@ app.use((req, res, next) => {
 
 // API Routes
 
-// Get file list
+// Get file list with folder support
 app.get('/api/files', checkPermission('main'), async (req, res) => {
   try {
-    const files = await fs.readdir(config.STORAGE_PATH);
-    const fileList = [];
+    const folder = req.query.folder || '';
+    const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
     
-    for (const file of files) {
-      const filePath = path.join(config.STORAGE_PATH, file);
-      const stats = await fs.stat(filePath);
-      
-      // Определяем отображаемое имя файла
-      let displayName = file;
-      
-      // Если файл имеет старое имя с UUID, извлекаем оригинальное имя
-      if (file.includes('-') && file.length > 36) {
-        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/;
-        if (uuidPattern.test(file)) {
-          displayName = file.replace(uuidPattern, '');
-        }
-      }
-      
-      fileList.push({
-        name: file, // Реальное имя файла для скачивания
-        displayName: displayName, // Отображаемое имя
-        size: stats.size,
-        created: stats.birthtime,
-        modified: stats.mtime
-      });
+    if (!fs.existsSync(folderPath)) {
+      return res.json({ files: [], folders: [] });
     }
     
-    res.json({ files: fileList });
+    const items = await fs.readdir(folderPath);
+    const fileList = [];
+    const folderList = [];
+    
+    for (const item of items) {
+      const itemPath = path.join(folderPath, item);
+      const stats = await fs.stat(itemPath);
+      
+      if (stats.isDirectory()) {
+        folderList.push({
+          name: item,
+          type: 'folder',
+          created: stats.birthtime,
+          modified: stats.mtime
+        });
+      } else {
+        // Определяем отображаемое имя файла
+        let displayName = item;
+        
+        // Если файл имеет старое имя с UUID, извлекаем оригинальное имя
+        if (item.includes('-') && item.length > 36) {
+          const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/;
+          if (uuidPattern.test(item)) {
+            displayName = item.replace(uuidPattern, '');
+          }
+        }
+        
+        fileList.push({
+          name: item, // Реальное имя файла для скачивания
+          displayName: displayName, // Отображаемое имя
+          size: stats.size,
+          created: stats.birthtime,
+          modified: stats.mtime,
+          type: 'file'
+        });
+      }
+    }
+    
+    res.json({ 
+      files: fileList, 
+      folders: folderList,
+      currentFolder: folder 
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to read files' });
   }
 });
 
-// Upload file
+// Create folder
+app.post('/api/folders', checkPermission('main'), async (req, res) => {
+  try {
+    const { name, parentFolder = '' } = req.body;
+    
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ error: 'Folder name is required' });
+    }
+    
+    // Sanitize folder name
+    const sanitizedName = name.replace(/[^a-zA-Z0-9а-яА-Я\s\-_]/g, '').trim();
+    if (sanitizedName !== name) {
+      return res.status(400).json({ error: 'Invalid folder name' });
+    }
+    
+    const folderPath = parentFolder ? 
+      path.join(config.STORAGE_PATH, parentFolder, sanitizedName) : 
+      path.join(config.STORAGE_PATH, sanitizedName);
+    
+    if (fs.existsSync(folderPath)) {
+      return res.status(409).json({ error: 'Folder already exists' });
+    }
+    
+    await fs.ensureDir(folderPath);
+    res.json({ 
+      message: 'Folder created successfully',
+      folderName: sanitizedName,
+      path: parentFolder ? `${parentFolder}/${sanitizedName}` : sanitizedName
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create folder' });
+  }
+});
+
+// Upload file with folder support
 app.post('/api/upload', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
   
+  const folder = req.body.folder || '';
+  const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
+  
+  // Ensure folder exists
+  fs.ensureDirSync(folderPath);
+  
   res.json({
     message: 'File uploaded successfully',
     filename: req.file.filename,
     originalName: req.file.originalname,
-    size: req.file.size
+    size: req.file.size,
+    folder: folder
   });
 });
 
@@ -198,9 +264,36 @@ app.use((error, req, res, next) => {
   next(error);
 });
 
-// Download file
+// Download file with folder support
 app.get('/api/download/:filename', checkPermission('main'), (req, res) => {
   const filename = req.params.filename;
+  const folder = req.query.folder || '';
+  const filePath = folder ? 
+    path.join(config.STORAGE_PATH, folder, filename) : 
+    path.join(config.STORAGE_PATH, filename);
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+  
+  res.download(filePath);
+});
+
+// Permanent link for file download (no auth required)
+app.get('/:folder/:filename', (req, res) => {
+  const { folder, filename } = req.params;
+  const filePath = path.join(config.STORAGE_PATH, folder, filename);
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+  
+  res.download(filePath);
+});
+
+// Permanent link for root files
+app.get('/:filename', (req, res) => {
+  const { filename } = req.params;
   const filePath = path.join(config.STORAGE_PATH, filename);
   
   if (!fs.existsSync(filePath)) {
@@ -210,10 +303,13 @@ app.get('/api/download/:filename', checkPermission('main'), (req, res) => {
   res.download(filePath);
 });
 
-// Delete file
+// Delete file with folder support
 app.delete('/api/files/:filename', checkPermission('main'), (req, res) => {
   const filename = req.params.filename;
-  const filePath = path.join(config.STORAGE_PATH, filename);
+  const folder = req.query.folder || '';
+  const filePath = folder ? 
+    path.join(config.STORAGE_PATH, folder, filename) : 
+    path.join(config.STORAGE_PATH, filename);
   
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'File not found' });
@@ -225,6 +321,31 @@ app.delete('/api/files/:filename', checkPermission('main'), (req, res) => {
     }
     res.json({ message: 'File deleted successfully' });
   });
+});
+
+// Delete folder
+app.delete('/api/folders/:foldername', checkPermission('main'), async (req, res) => {
+  try {
+    const foldername = req.params.foldername;
+    const parentFolder = req.query.parentFolder || '';
+    const folderPath = parentFolder ? 
+      path.join(config.STORAGE_PATH, parentFolder, foldername) : 
+      path.join(config.STORAGE_PATH, foldername);
+    
+    if (!fs.existsSync(folderPath)) {
+      return res.status(404).json({ error: 'Folder not found' });
+    }
+    
+    const stats = await fs.stat(folderPath);
+    if (!stats.isDirectory()) {
+      return res.status(400).json({ error: 'Not a folder' });
+    }
+    
+    await fs.remove(folderPath);
+    res.json({ message: 'Folder deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete folder' });
+  }
 });
 
 

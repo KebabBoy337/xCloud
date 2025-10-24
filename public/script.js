@@ -2,7 +2,9 @@ class xCloudStorage {
     constructor() {
         this.apiKey = '';
         this.files = [];
-        this.version = '1.1.0'; // Версия приложения
+        this.folders = [];
+        this.currentFolder = '';
+        this.version = '1.0.228'; // Версия приложения
         console.log('xCloud Storage v' + this.version + ' initialized');
         this.init();
     }
@@ -73,6 +75,14 @@ class xCloudStorage {
             });
         }
 
+        // Create folder button
+        const createFolderBtn = document.getElementById('createFolderBtn');
+        if (createFolderBtn) {
+            createFolderBtn.addEventListener('click', () => {
+                this.openCreateFolderModal();
+            });
+        }
+
         // Refresh button
         const refreshBtn = document.getElementById('refreshBtn');
         if (refreshBtn) {
@@ -101,6 +111,38 @@ class xCloudStorage {
         if (cancelUpload) {
             cancelUpload.addEventListener('click', () => {
                 this.closeUploadModal();
+            });
+        }
+
+        // Create folder modal controls
+        const closeFolderModal = document.getElementById('closeFolderModal');
+        if (closeFolderModal) {
+            closeFolderModal.addEventListener('click', () => {
+                this.closeCreateFolderModal();
+            });
+        }
+
+        const cancelCreateFolder = document.getElementById('cancelCreateFolder');
+        if (cancelCreateFolder) {
+            cancelCreateFolder.addEventListener('click', () => {
+                this.closeCreateFolderModal();
+            });
+        }
+
+        const createFolder = document.getElementById('createFolder');
+        if (createFolder) {
+            createFolder.addEventListener('click', () => {
+                this.createFolder();
+            });
+        }
+
+        // Folder name input Enter key
+        const folderName = document.getElementById('folderName');
+        if (folderName) {
+            folderName.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.createFolder();
+                }
             });
         }
 
@@ -166,7 +208,7 @@ class xCloudStorage {
             });
         }
 
-        // File actions (download/delete) - use event delegation
+        // File actions (download/delete/link) - use event delegation
         const fileList = document.getElementById('fileList');
         if (fileList) {
             fileList.addEventListener('click', (e) => {
@@ -176,6 +218,26 @@ class xCloudStorage {
                 } else if (e.target.closest('.delete-btn')) {
                     const filename = e.target.closest('.delete-btn').dataset.filename;
                     this.deleteFile(filename);
+                } else if (e.target.closest('.link-btn')) {
+                    const filename = e.target.closest('.link-btn').dataset.filename;
+                    this.createPermanentLink(filename);
+                } else if (e.target.closest('.folder-item')) {
+                    const folderName = e.target.closest('.folder-item').dataset.folder;
+                    this.navigateToFolder(folderName);
+                } else if (e.target.closest('.folder-delete-btn')) {
+                    const folderName = e.target.closest('.folder-delete-btn').dataset.folder;
+                    this.deleteFolder(folderName);
+                }
+            });
+        }
+
+        // Breadcrumb navigation
+        const breadcrumb = document.getElementById('breadcrumb');
+        if (breadcrumb) {
+            breadcrumb.addEventListener('click', (e) => {
+                if (e.target.closest('.breadcrumb-item')) {
+                    const folder = e.target.closest('.breadcrumb-item').dataset.folder;
+                    this.navigateToFolder(folder);
                 }
             });
         }
@@ -222,7 +284,11 @@ class xCloudStorage {
         this.showLoading(true);
 
         try {
-            const response = await fetch('/api/files', {
+            const url = this.currentFolder ? 
+                `/api/files?folder=${encodeURIComponent(this.currentFolder)}` : 
+                '/api/files';
+            
+            const response = await fetch(url, {
                 headers: {
                     'X-API-Key': this.apiKey
                 }
@@ -231,8 +297,12 @@ class xCloudStorage {
             if (response.ok) {
                 const data = await response.json();
                 console.log('Files loaded:', data.files);
+                console.log('Folders loaded:', data.folders);
                 this.files = data.files || [];
+                this.folders = data.folders || [];
+                this.currentFolder = data.currentFolder || '';
                 this.renderFiles();
+                this.updateBreadcrumb();
                 this.updateStats();
             } else {
                 throw new Error('Failed to load files');
@@ -248,18 +318,45 @@ class xCloudStorage {
     renderFiles() {
         const fileList = document.getElementById('fileList');
         
-        if (this.files.length === 0) {
+        if (this.files.length === 0 && this.folders.length === 0) {
             fileList.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-cloud-upload-alt"></i>
-                            <h3>No files</h3>
-                            <p>Upload your first file to get started</p>
+                    <h3>No files</h3>
+                    <p>Upload your first file to get started</p>
                 </div>
             `;
             return;
         }
 
-        fileList.innerHTML = this.files.map(file => this.createFileItem(file)).join('');
+        const foldersHtml = this.folders.map(folder => this.createFolderItem(folder)).join('');
+        const filesHtml = this.files.map(file => this.createFileItem(file)).join('');
+        
+        fileList.innerHTML = foldersHtml + filesHtml;
+    }
+
+    createFolderItem(folder) {
+        const createdDate = new Date(folder.created).toLocaleDateString('ru-RU');
+        
+        return `
+            <div class="folder-item" data-folder="${folder.name}">
+                <div class="file-icon folder">
+                    <i class="fas fa-folder"></i>
+                </div>
+                <div class="file-info">
+                    <div class="file-name" title="${folder.name}">${folder.name}</div>
+                    <div class="file-meta">
+                        <span>Folder</span>
+                        <span>${createdDate}</span>
+                    </div>
+                </div>
+                <div class="file-actions">
+                    <button class="file-action danger folder-delete-btn" data-folder="${folder.name}" title="Delete Folder">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
     }
 
     createFileItem(file) {
@@ -283,6 +380,9 @@ class xCloudStorage {
                 <div class="file-actions">
                     <button class="file-action download-btn" data-filename="${file.name}" title="Download">
                         <i class="fas fa-download"></i>
+                    </button>
+                    <button class="file-action link-btn" data-filename="${file.name}" title="Create Permanent Link">
+                        <i class="fas fa-link"></i>
                     </button>
                     <button class="file-action danger delete-btn" data-filename="${file.name}" title="Delete">
                         <i class="fas fa-trash"></i>
@@ -359,6 +459,127 @@ class xCloudStorage {
         document.getElementById('totalFiles').textContent = totalFiles;
         document.getElementById('totalSize').textContent = this.formatFileSize(totalSize);
         document.getElementById('lastUpdate').textContent = lastUpdate;
+    }
+
+    updateBreadcrumb() {
+        const breadcrumb = document.getElementById('breadcrumb');
+        const folderParts = this.currentFolder ? this.currentFolder.split('/') : [];
+        
+        let html = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
+        
+        let currentPath = '';
+        folderParts.forEach((part, index) => {
+            currentPath += (currentPath ? '/' : '') + part;
+            html += `<button class="breadcrumb-item" data-folder="${currentPath}"><i class="fas fa-folder"></i><span>${part}</span></button>`;
+        });
+        
+        breadcrumb.innerHTML = html;
+    }
+
+    navigateToFolder(folderName) {
+        this.currentFolder = folderName;
+        this.loadFiles();
+    }
+
+    openCreateFolderModal() {
+        if (!this.apiKey) {
+            this.showToast('Please login first', 'error');
+            return;
+        }
+
+        const modal = document.getElementById('createFolderModal');
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            document.getElementById('folderName').focus();
+        }
+    }
+
+    closeCreateFolderModal() {
+        document.getElementById('createFolderModal').classList.remove('active');
+        document.body.style.overflow = '';
+        document.getElementById('folderName').value = '';
+    }
+
+    async createFolder() {
+        const folderName = document.getElementById('folderName').value.trim();
+        
+        if (!folderName) {
+            this.showToast('Enter folder name', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/folders', {
+                method: 'POST',
+                headers: {
+                    'X-API-Key': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: folderName,
+                    parentFolder: this.currentFolder
+                })
+            });
+
+            if (response.ok) {
+                this.showToast('Folder created successfully', 'success');
+                this.closeCreateFolderModal();
+                this.loadFiles();
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to create folder');
+            }
+        } catch (error) {
+            this.showToast('Create folder error: ' + error.message, 'error');
+        }
+    }
+
+    async deleteFolder(folderName) {
+        if (!confirm(`Delete folder "${folderName}"?`)) {
+            return;
+        }
+
+        try {
+            const url = this.currentFolder ? 
+                `/api/folders/${encodeURIComponent(folderName)}?parentFolder=${encodeURIComponent(this.currentFolder)}` : 
+                `/api/folders/${encodeURIComponent(folderName)}`;
+            
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-API-Key': this.apiKey
+                }
+            });
+
+            if (response.ok) {
+                this.showToast('Folder deleted', 'success');
+                this.loadFiles();
+            } else {
+                throw new Error('Delete failed');
+            }
+        } catch (error) {
+            this.showToast('Delete error: ' + error.message, 'error');
+        }
+    }
+
+    createPermanentLink(filename) {
+        const baseUrl = window.location.origin;
+        let link;
+        
+        if (this.currentFolder) {
+            link = `${baseUrl}/${this.currentFolder}/${filename}`;
+        } else {
+            link = `${baseUrl}/${filename}`;
+        }
+        
+        // Copy to clipboard
+        navigator.clipboard.writeText(link).then(() => {
+            this.showToast('Permanent link copied to clipboard', 'success');
+        }).catch(() => {
+            // Fallback: show in prompt
+            prompt('Permanent link (copy this):', link);
+        });
     }
 
     filterFiles(searchTerm) {
@@ -515,6 +736,9 @@ class xCloudStorage {
 
         const formData = new FormData();
         formData.append('file', file);
+        if (this.currentFolder) {
+            formData.append('folder', this.currentFolder);
+        }
 
         this.showUploadProgress(true);
 
@@ -572,7 +796,11 @@ class xCloudStorage {
         }
 
         try {
-            const response = await fetch(`/api/download/${filename}`, {
+            const url = this.currentFolder ? 
+                `/api/download/${filename}?folder=${encodeURIComponent(this.currentFolder)}` : 
+                `/api/download/${filename}`;
+            
+            const response = await fetch(url, {
                 headers: {
                     'X-API-Key': this.apiKey
                 }
@@ -608,7 +836,11 @@ class xCloudStorage {
         }
 
         try {
-            const response = await fetch(`/api/files/${filename}`, {
+            const url = this.currentFolder ? 
+                `/api/files/${filename}?folder=${encodeURIComponent(this.currentFolder)}` : 
+                `/api/files/${filename}`;
+            
+            const response = await fetch(url, {
                 method: 'DELETE',
                 headers: {
                     'X-API-Key': this.apiKey

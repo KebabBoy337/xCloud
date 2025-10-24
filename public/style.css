@@ -1131,3 +1131,138 @@ body {
 .file-icon.archive { background: linear-gradient(135deg, #ff9ff3, #f368e0); }
 .file-icon.code { background: linear-gradient(135deg, #70a1ff, #5352ed); }
 .file-icon.default { background: linear-gradient(135deg, var(--accent-color), #0099cc); }
+.file-icon.folder { background: linear-gradient(135deg, #ffa726, #ff9800); }
+
+/* Breadcrumb Navigation */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    overflow-x: auto;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.breadcrumb-item:hover {
+    background: var(--glass-bg);
+    color: var(--text-primary);
+}
+
+.breadcrumb-item:last-child {
+    color: var(--accent-color);
+    font-weight: 500;
+}
+
+.breadcrumb-item i {
+    font-size: 0.8rem;
+}
+
+/* Folder Items */
+.folder-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.folder-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.15);
+}
+
+.folder-item .file-icon {
+    background: linear-gradient(135deg, #ffa726, #ff9800);
+    color: #fff;
+}
+
+.folder-item .file-icon i {
+    color: #fff;
+}
+
+/* Version Info */
+.version-info {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.5rem 1rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    z-index: 1000;
+}
+
+.version-info span {
+    font-weight: 500;
+}
+
+/* Link Button */
+.link-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.link-btn:hover {
+    background: linear-gradient(135deg, #5a6fd8, #6a4190);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* Folder Delete Button */
+.folder-delete-btn {
+    background: var(--danger-color);
+    color: white;
+}
+
+.folder-delete-btn:hover {
+    background: #e63946;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .breadcrumb {
+        padding: 0.5rem;
+    }
+    
+    .breadcrumb-item {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .version-info {
+        bottom: 0.5rem;
+        right: 0.5rem;
+        font-size: 0.7rem;
+        padding: 0.25rem 0.75rem;
+    }
+}
