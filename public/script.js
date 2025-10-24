@@ -768,17 +768,17 @@ class xCloudStorage {
         
         // Ограничиваем глубину до 5 папок
         const maxDepth = 5;
-        const displayParts = folderParts.slice(0, maxDepth);
-        
-        let currentPath = '';
-        displayParts.forEach((part, index) => {
-            currentPath += (currentPath ? '/' : '') + part;
-            html += `<span class="breadcrumb-separator">/</span><button class="breadcrumb-item" data-folder="${currentPath}"><i class="fas fa-folder"></i><span>${part}</span></button>`;
-        });
         
         // Если больше 5 папок - показываем только Root
         if (folderParts.length > maxDepth) {
             html = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
+        } else {
+            // Показываем путь до 5 папок
+            let currentPath = '';
+            folderParts.forEach((part, index) => {
+                currentPath += (currentPath ? '/' : '') + part;
+                html += `<span class="breadcrumb-separator">/</span><button class="breadcrumb-item" data-folder="${currentPath}"><i class="fas fa-folder"></i><span>${part}</span></button>`;
+            });
         }
         
         // Обновляем кэш
