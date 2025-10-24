@@ -912,7 +912,8 @@ class xCloudStorage {
         if (files.length === 0) return;
 
         // Store all selected files
-        this.selectedFiles = Array.from(files);
+        this.selectedFiles.clear();
+        files.forEach(file => this.selectedFiles.add(file));
         
         const startUploadBtn = document.getElementById('startUpload');
         if (startUploadBtn) {
@@ -970,8 +971,8 @@ class xCloudStorage {
         let files = Array.from(fileInput.files);
 
         // Fallback: use stored files reference if fileInput doesn't have files
-        if (files.length === 0 && this.selectedFiles && this.selectedFiles.length > 0) {
-            files = this.selectedFiles;
+        if (files.length === 0 && this.selectedFiles && this.selectedFiles.size > 0) {
+            files = Array.from(this.selectedFiles);
         }
 
         if (files.length === 0) {
