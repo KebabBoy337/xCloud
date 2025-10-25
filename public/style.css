@@ -1524,10 +1524,10 @@ body {
 }
 
 .stat-icon {
-    font-size: 1rem;
+    font-size: 1.2rem;
     color: var(--accent-color);
-    width: 1rem;
-    height: 1rem;
+    width: 1.2rem;
+    height: 1.2rem;
     text-align: center;
     flex-shrink: 0;
     display: flex;
@@ -1920,7 +1920,7 @@ body {
 .file-item {
     display: flex !important;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: 0.9rem 1.5rem;
     background: #1a1a1a !important; /* Darker like breadcrumb */
     border: 1px solid #2a2a2a !important;
     border-radius: 0.75rem !important;
@@ -1998,9 +1998,9 @@ body {
     }
     
     .stat-icon {
-        font-size: 0.9rem;
-        width: 0.9rem;
-        height: 0.9rem;
+        font-size: 1rem;
+        width: 1rem;
+        height: 1rem;
     }
     
     .stat-content {
