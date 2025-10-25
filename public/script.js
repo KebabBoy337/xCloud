@@ -767,16 +767,25 @@ class xCloudStorage {
             </div>
             <div class="breadcrumb-stats">
                 <div class="stat-item">
-                    <span class="stat-value" id="totalFiles">${totalFiles}</span>
-                    <span class="stat-label">Files</span>
+                    <i class="fas fa-folder stat-icon"></i>
+                    <div class="stat-content">
+                        <span class="stat-value" id="totalFiles">${totalFiles}</span>
+                        <span class="stat-label">Files</span>
+                    </div>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value" id="totalSize">${this.formatFileSize(totalSize)}</span>
-                    <span class="stat-label">Size</span>
+                    <i class="fas fa-hdd stat-icon"></i>
+                    <div class="stat-content">
+                        <span class="stat-value" id="totalSize">${this.formatFileSize(totalSize)}</span>
+                        <span class="stat-label">Size</span>
+                    </div>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value" id="lastUpdate">${lastUpdate}</span>
-                    <span class="stat-label">Updated</span>
+                    <i class="fas fa-clock stat-icon"></i>
+                    <div class="stat-content">
+                        <span class="stat-value" id="lastUpdate">${lastUpdate}</span>
+                        <span class="stat-label">Updated</span>
+                    </div>
                 </div>
             </div>
         `;
