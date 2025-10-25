@@ -482,7 +482,6 @@ class xCloudStorage {
                 this.currentFolder = cachedData.currentFolder || '';
                 this.renderFiles();
                 this.updateBreadcrumb();
-                this.updateStats();
                 this.loadPublicStatus();
                 this.showLoading(false);
                 return;
@@ -505,7 +504,6 @@ class xCloudStorage {
                 
                 this.renderFiles();
                 this.updateBreadcrumb();
-                this.updateStats();
                 this.loadPublicStatus();
             } else {
                 throw new Error('Failed to load files');
@@ -730,29 +728,6 @@ class xCloudStorage {
         return result;
     }
 
-    updateStats() {
-        const totalFiles = this.files.length;
-        const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
-        const lastUpdate = new Date().toLocaleTimeString('ru-RU');
-
-        // Check statistics cache
-        const cacheKey = `${totalFiles}-${totalSize}`;
-        if (this.statsCache && this.statsCache.key === cacheKey) {
-            return; // Statistics haven't changed
-        }
-
-        // Update cache
-        this.statsCache = {
-            key: cacheKey,
-            totalFiles,
-            totalSize,
-            lastUpdate
-        };
-
-        document.getElementById('totalFiles').textContent = totalFiles;
-        document.getElementById('totalSize').textContent = this.formatFileSize(totalSize);
-        document.getElementById('lastUpdate').textContent = lastUpdate;
-    }
 
     updateBreadcrumb() {
         const breadcrumb = document.getElementById('breadcrumb');
@@ -764,22 +739,47 @@ class xCloudStorage {
             return; // Breadcrumb hasn't changed
         }
         
-        let html = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
+        let pathHtml = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
         
         // Limit depth to 5 folders
         const maxDepth = 5;
         
         // If more than 5 folders - show only Root
         if (folderParts.length > maxDepth) {
-            html = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
+            pathHtml = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
         } else {
             // Show path up to 5 folders
             let currentPath = '';
             folderParts.forEach((part, index) => {
                 currentPath += (currentPath ? '/' : '') + part;
-                html += `<span class="breadcrumb-separator">/</span><button class="breadcrumb-item" data-folder="${currentPath}"><i class="fas fa-folder"></i><span>${part}</span></button>`;
+                pathHtml += `<span class="breadcrumb-separator">/</span><button class="breadcrumb-item" data-folder="${currentPath}"><i class="fas fa-folder"></i><span>${part}</span></button>`;
             });
         }
+        
+        // Create new breadcrumb structure with stats
+        const totalFiles = this.files.length;
+        const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
+        const lastUpdate = new Date().toLocaleTimeString('en-US');
+        
+        const html = `
+            <div class="breadcrumb-path">
+                ${pathHtml}
+            </div>
+            <div class="breadcrumb-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="totalFiles">${totalFiles}</span>
+                    <span class="stat-label">Files</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="totalSize">${this.formatFileSize(totalSize)}</span>
+                    <span class="stat-label">Size</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="lastUpdate">${lastUpdate}</span>
+                    <span class="stat-label">Updated</span>
+                </div>
+            </div>
+        `;
         
         // Update cache
         this.breadcrumbCache = {

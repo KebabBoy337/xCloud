@@ -91,43 +91,29 @@
         <!-- Main Content -->
         <main class="main" id="mainContent" style="display: none !important;">
             <div class="container">
-                <!-- Stats Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-folder"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="totalFiles">0</div>
-                            <div class="stat-label">Files</div>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-hdd"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="totalSize">0 MB</div>
-                            <div class="stat-label">Size</div>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="lastUpdate">--:--</div>
-                            <div class="stat-label">Updated</div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Breadcrumb Navigation -->
+                <!-- Breadcrumb Navigation with Stats -->
                 <div class="breadcrumb" id="breadcrumb">
-                    <button class="breadcrumb-item" data-folder="">
-                        <i class="fas fa-home"></i>
-                        <span>Root</span>
-                    </button>
+                    <div class="breadcrumb-path">
+                        <button class="breadcrumb-item" data-folder="">
+                            <i class="fas fa-home"></i>
+                            <span>Root</span>
+                        </button>
+                    </div>
+                    <div class="breadcrumb-stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="totalFiles">0</span>
+                            <span class="stat-label">Files</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="totalSize">0 MB</span>
+                            <span class="stat-label">Size</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="lastUpdate">--:--</span>
+                            <span class="stat-label">Updated</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- File List -->

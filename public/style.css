@@ -1480,7 +1480,7 @@ body {
 .breadcrumb {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
     margin: 0.75rem 0;
     padding: 0.75rem 1rem;
     background: var(--glass-bg);
@@ -1488,6 +1488,41 @@ body {
     border-radius: 12px;
     backdrop-filter: blur(10px);
     overflow-x: auto;
+}
+
+.breadcrumb-path {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.breadcrumb-stats {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-shrink: 0;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.stat-item .stat-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.stat-item .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .breadcrumb-separator {
@@ -1907,6 +1942,31 @@ body {
 @media (max-width: 768px) {
     .breadcrumb {
         padding: 0.5rem;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .breadcrumb-path {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    .breadcrumb-stats {
+        width: 100%;
+        justify-content: space-around;
+        gap: 1rem;
+    }
+    
+    .stat-item {
+        flex: 1;
+    }
+    
+    .stat-item .stat-value {
+        font-size: 1rem;
+    }
+    
+    .stat-item .stat-label {
+        font-size: 0.7rem;
     }
     
     .breadcrumb-item {
