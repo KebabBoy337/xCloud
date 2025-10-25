@@ -114,7 +114,7 @@ body {
 
 .login-header h2 {
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     font-size: 1.75rem;
     font-weight: 600;
     letter-spacing: -0.025em;
@@ -140,7 +140,7 @@ body {
     display: block;
     color: var(--text-primary);
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     font-size: 0.95rem;
     letter-spacing: 0.025em;
 }
@@ -193,7 +193,7 @@ body {
 .login-info p:first-child {
     color: var(--text-primary);
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 /* Login Screen Animations */
@@ -432,7 +432,7 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 .stat-card {
@@ -454,17 +454,6 @@ body {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
-.stat-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    background: linear-gradient(135deg, var(--accent-color), #0099cc);
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    color: white;
-}
 
 .stat-content {
     flex: 1;
@@ -766,7 +755,7 @@ body {
 
 .empty-state h3 {
     font-size: 1.25rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     color: var(--text-secondary);
 }
 
@@ -880,7 +869,7 @@ body {
 
 .upload-content h4 {
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     font-size: 1.1rem;
 }
 
@@ -911,7 +900,7 @@ body {
     background: var(--glass-bg);
     border-radius: 0.25rem;
     overflow: hidden;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 .progress-fill {
@@ -1418,11 +1407,6 @@ body {
         padding: 1rem;
     }
     
-    .stat-icon {
-        width: 2.5rem;
-        height: 2.5rem;
-        font-size: 1rem;
-    }
     
     .stat-value {
         font-size: 1.25rem;
@@ -1924,7 +1908,7 @@ body {
     background: #1a1a1a !important; /* Darker like breadcrumb */
     border: 1px solid #2a2a2a !important;
     border-radius: 0.75rem !important;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     transition: all 0.3s ease;
     position: relative;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
