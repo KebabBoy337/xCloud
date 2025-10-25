@@ -1508,10 +1508,10 @@ body {
 }
 
 .stat-icon {
-    font-size: 2.4rem;
+    font-size: 1.8rem;
     color: var(--accent-color);
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 1.8rem;
+    height: 1.8rem;
     text-align: center;
     flex-shrink: 0;
     display: flex;
@@ -1982,9 +1982,9 @@ body {
     }
     
     .stat-icon {
-        font-size: 2rem;
-        width: 2rem;
-        height: 2rem;
+        font-size: 1.5rem;
+        width: 1.5rem;
+        height: 1.5rem;
     }
     
     .stat-content {
