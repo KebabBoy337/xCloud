@@ -194,6 +194,69 @@ app.use((req, res, next) => {
 
 // API Routes
 
+// Get global storage statistics
+app.get('/api/stats', checkPermission('main'), async (req, res) => {
+  try {
+    let totalFiles = 0;
+    let totalSize = 0;
+    
+    const scanDirectory = async (dirPath) => {
+      const items = await fs.readdir(dirPath);
+      
+      for (const item of items) {
+        // Skip tmp directory
+        if (item === 'tmp') {
+          continue;
+        }
+        
+        const itemPath = path.join(dirPath, item);
+        const stats = await fs.stat(itemPath);
+        
+        if (stats.isDirectory()) {
+          await scanDirectory(itemPath);
+        } else {
+          totalFiles++;
+          totalSize += stats.size;
+        }
+      }
+    };
+    
+    await scanDirectory(config.STORAGE_PATH);
+    
+    res.json({
+      totalFiles,
+      totalSize,
+      totalFolders: await countFolders(config.STORAGE_PATH)
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get storage statistics' });
+  }
+});
+
+// Helper function to count folders recursively
+const countFolders = async (dirPath) => {
+  let folderCount = 0;
+  
+  const scanDirectory = async (dir) => {
+    const items = await fs.readdir(dir);
+    
+    for (const item of items) {
+      if (item === 'tmp') continue;
+      
+      const itemPath = path.join(dir, item);
+      const stats = await fs.stat(itemPath);
+      
+      if (stats.isDirectory()) {
+        folderCount++;
+        await scanDirectory(itemPath);
+      }
+    }
+  };
+  
+  await scanDirectory(dirPath);
+  return folderCount;
+};
+
 // Get file list with folder support
 app.get('/api/files', checkPermission('main'), async (req, res) => {
   try {

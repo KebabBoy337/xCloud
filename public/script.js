@@ -16,6 +16,7 @@ class xCloudStorage {
         this.publicStatusCache = new Map(); // Cache for public file status
         this.apiCache = new Map(); // Cache for API responses
         this.elementCache = new Map(); // Cache for DOM elements
+        this.globalStats = null; // Global storage statistics
         this.init();
     }
 
@@ -46,6 +47,7 @@ class xCloudStorage {
             if (response.ok) {
                 this.showMainContent();
                 this.loadFiles();
+                this.loadGlobalStats(); // Load global stats on startup
             } else {
                 // API key doesn't work, clear localStorage
                 localStorage.removeItem('xcloud_api_key');
@@ -451,6 +453,7 @@ class xCloudStorage {
                 this.showToast('Login successful', 'success');
                 this.showMainContent();
                 this.loadFiles();
+                this.loadGlobalStats(); // Load global stats after login
             } else {
                 // Clear localStorage on invalid key
                 localStorage.removeItem('xcloud_api_key');
@@ -483,6 +486,7 @@ class xCloudStorage {
                 this.renderFiles();
                 this.updateBreadcrumb();
                 this.loadPublicStatus();
+                this.loadGlobalStats(); // Load global stats
                 this.showLoading(false);
                 return;
             }
@@ -505,6 +509,7 @@ class xCloudStorage {
                 this.renderFiles();
                 this.updateBreadcrumb();
                 this.loadPublicStatus();
+                this.loadGlobalStats(); // Load global stats
             } else {
                 throw new Error('Failed to load files');
             }
@@ -729,6 +734,24 @@ class xCloudStorage {
     }
 
 
+    async loadGlobalStats() {
+        try {
+            const response = await fetch('/api/stats', {
+                headers: {
+                    'X-API-Key': this.apiKey
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.globalStats = data;
+                this.updateBreadcrumb();
+            }
+        } catch (error) {
+            console.error('Failed to load global stats:', error);
+        }
+    }
+
     updateBreadcrumb() {
         const breadcrumb = document.getElementById('breadcrumb');
         const folderParts = this.currentFolder ? this.currentFolder.split('/') : [];
@@ -756,10 +779,15 @@ class xCloudStorage {
             });
         }
         
-        // Create new breadcrumb structure with stats
-        const totalFiles = this.files.length;
-        const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
+        // Use global stats if available, otherwise use local stats
+        const totalFiles = this.globalStats ? this.globalStats.totalFiles : this.files.length;
+        const totalSize = this.globalStats ? this.globalStats.totalSize : this.files.reduce((sum, file) => sum + file.size, 0);
         const lastUpdate = new Date().toLocaleTimeString('en-US');
+        
+        // Calculate storage usage (assuming 300GB total)
+        const totalStorageGB = 300;
+        const usedStorageGB = totalSize / (1024 * 1024 * 1024);
+        const storageUsage = `${this.formatFileSize(totalSize)} из ${totalStorageGB} GB`;
         
         const html = `
             <div class="breadcrumb-path">
@@ -776,8 +804,8 @@ class xCloudStorage {
                 <div class="stat-item">
                     <i class="fas fa-hdd stat-icon"></i>
                     <div class="stat-content">
-                        <span class="stat-value" id="totalSize">${this.formatFileSize(totalSize)}</span>
-                        <span class="stat-label">Size</span>
+                        <span class="stat-value" id="totalSize">${storageUsage}</span>
+                        <span class="stat-label">Storage</span>
                     </div>
                 </div>
                 <div class="stat-item">
