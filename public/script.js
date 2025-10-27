@@ -725,7 +725,15 @@ class xCloudStorage {
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        const result = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        
+        let result;
+        if (i >= 3) { // GB and above - no decimals
+            result = Math.round(bytes / Math.pow(k, i)) + ' ' + sizes[i];
+        } else if (i >= 2) { // MB - no decimals
+            result = Math.round(bytes / Math.pow(k, i)) + ' ' + sizes[i];
+        } else { // KB and B - keep decimals for small files
+            result = parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
         
         // Save to cache
         this.sizeCache.set(bytes, result);
@@ -787,7 +795,7 @@ class xCloudStorage {
         // Calculate storage usage (assuming 300GB total)
         const totalStorageGB = 300;
         const usedStorageGB = totalSize / (1024 * 1024 * 1024);
-        const storageUsage = `${this.formatFileSize(totalSize)} из ${totalStorageGB} GB`;
+        const storageUsage = `${this.formatFileSize(totalSize)} of ${totalStorageGB} GB`;
         
         const html = `
             <div class="breadcrumb-path">
