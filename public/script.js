@@ -422,7 +422,7 @@ class xCloudStorage {
                 const breadcrumbItem = e.target.closest('.breadcrumb-item');
                 if (breadcrumbItem) {
                     const folder = breadcrumbItem.dataset.folder;
-                    this.navigateToFolder(folder);
+                    this.navigateToFolder(folder, true); // true indicates absolute path from breadcrumb
                 }
             });
         }
@@ -799,11 +799,14 @@ class xCloudStorage {
         breadcrumb.innerHTML = html;
     }
 
-    navigateToFolder(folderName) {
-        // If this is navigation from breadcrumb - use passed path
+    navigateToFolder(folderName, isAbsolutePath = false) {
+        // If this is navigation from breadcrumb - use passed path as absolute path
         // If this is navigation from folder - add to current path
         if (folderName === '') {
             this.currentFolder = '';
+        } else if (isAbsolutePath) {
+            // Breadcrumb navigation - use the path directly
+            this.currentFolder = folderName;
         } else if (this.currentFolder === '') {
             this.currentFolder = folderName;
         } else {
