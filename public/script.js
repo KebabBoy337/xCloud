@@ -4,7 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.5.2'; // Application version
+        this.version = '1.5.3'; // Application version
         this.selectedFiles = new Set(); // Track selected files
         this.selectedFolders = new Set(); // Track selected folders
         this.currentTextSearch = ''; // Current text search
