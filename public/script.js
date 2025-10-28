@@ -4,7 +4,7 @@ class xCloudStorage {
         this.files = [];
         this.folders = [];
         this.currentFolder = '';
-        this.version = '1.5.1'; // Application version
+        this.version = '1.5.2'; // Application version
         this.selectedFiles = new Set(); // Track selected files
         this.selectedFolders = new Set(); // Track selected folders
         this.currentTextSearch = ''; // Current text search
@@ -432,22 +432,37 @@ class xCloudStorage {
 
 
     async authenticate() {
+        console.log('🔐 [AUTH] Starting authentication...');
+        
         const apiKeyInput = document.getElementById('loginApiKey');
         this.apiKey = apiKeyInput.value.trim();
+        
+        console.log('🔑 [AUTH] API Key length:', this.apiKey.length);
+        console.log('🔑 [AUTH] API Key present:', !!this.apiKey);
 
         if (!this.apiKey) {
+            console.error('❌ [AUTH] No API key provided');
             this.showToast('Enter API key', 'error');
             return;
         }
 
         try {
+            console.log('🌐 [AUTH] Sending health check request...');
             const response = await fetch('/api/health', {
                 headers: {
                     'X-API-Key': this.apiKey
                 }
             });
 
+            console.log('📡 [AUTH] Health check response:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                headers: Object.fromEntries(response.headers.entries())
+            });
+
             if (response.ok) {
+                console.log('✅ [AUTH] Authentication successful');
                 // Save API key only if it works
                 localStorage.setItem('xcloud_api_key', this.apiKey);
                 this.showToast('Login successful', 'success');
@@ -455,11 +470,18 @@ class xCloudStorage {
                 this.loadFiles();
                 this.loadGlobalStats(); // Load global stats after login
             } else {
+                console.error('❌ [AUTH] Authentication failed:', response.status, response.statusText);
                 // Clear localStorage on invalid key
                 localStorage.removeItem('xcloud_api_key');
                 throw new Error('Invalid API key');
             }
         } catch (error) {
+            console.error('💥 [AUTH] Authentication error:', error);
+            console.error('💥 [AUTH] Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
             // Clear localStorage on error
             localStorage.removeItem('xcloud_api_key');
             this.showToast('Login error: ' + error.message, 'error');
@@ -1267,27 +1289,42 @@ class xCloudStorage {
     }
 
     handleFileSelect(files) {
-        if (files.length === 0) return;
+        console.log('📁 [FILE_SELECT] Files selected:', files.length, 'files');
+        
+        if (files.length === 0) {
+            console.log('⚠️ [FILE_SELECT] No files selected, returning');
+            return;
+        }
 
         // Convert FileList to Array if needed
         const filesArray = Array.from(files);
+        console.log('📋 [FILE_SELECT] Files array:', filesArray.map(f => ({ name: f.name, size: f.size, type: f.type })));
         
         // Store all selected files
         this.selectedFiles.clear();
-        filesArray.forEach(file => this.selectedFiles.add(file));
+        filesArray.forEach(file => {
+            this.selectedFiles.add(file);
+            console.log('💾 [FILE_SELECT] Stored file:', file.name, 'Size:', file.size);
+        });
         
         const startUploadBtn = document.getElementById('startUpload');
         if (startUploadBtn) {
             startUploadBtn.disabled = false;
+            console.log('✅ [FILE_SELECT] Upload button enabled');
+        } else {
+            console.error('❌ [FILE_SELECT] Upload button not found');
         }
         
         // Show files info
         const uploadContent = document.querySelector('.upload-content');
         if (uploadContent) {
+            console.log('📄 [FILE_SELECT] Updating upload content display');
+            
             // Clear previous file info
             const existingInfo = uploadContent.querySelector('.file-info-display');
             if (existingInfo) {
                 existingInfo.remove();
+                console.log('🗑️ [FILE_SELECT] Removed existing file info');
             }
             
             // Create new content for multiple files
@@ -1296,6 +1333,7 @@ class xCloudStorage {
             
             if (filesArray.length === 1) {
                 const file = filesArray[0];
+                console.log('📄 [FILE_SELECT] Single file display:', file.name);
                 fileInfo.innerHTML = `
                     <i class="fas fa-file"></i>
                     <h4>${file.name}</h4>
@@ -1303,6 +1341,7 @@ class xCloudStorage {
                 `;
             } else {
                 const totalSize = filesArray.reduce((sum, file) => sum + file.size, 0);
+                console.log('📄 [FILE_SELECT] Multiple files display:', filesArray.length, 'files, total size:', totalSize);
                 fileInfo.innerHTML = `
                     <i class="fas fa-files"></i>
                     <h4>${filesArray.length} files selected</h4>
@@ -1311,42 +1350,60 @@ class xCloudStorage {
             }
             
             uploadContent.appendChild(fileInfo);
+            console.log('✅ [FILE_SELECT] File info display updated');
+        } else {
+            console.error('❌ [FILE_SELECT] Upload content element not found');
         }
     }
 
     async startUpload() {
+        console.log('🚀 [UPLOAD] Starting upload process...');
+        
         const modal = document.getElementById('uploadModal');
         if (!modal || !modal.classList.contains('active')) {
+            console.error('❌ [UPLOAD] Upload modal is not open');
             this.showToast('Upload modal is not open', 'error');
             return;
         }
 
         const fileInput = document.getElementById('fileInput');
         if (!fileInput) {
+            console.error('❌ [UPLOAD] File input not found');
             this.showToast('File input not found', 'error');
             return;
         }
         
         let files = Array.from(fileInput.files);
+        console.log('📁 [UPLOAD] Files from input:', files.length, 'files');
 
         // Fallback: use stored files reference if fileInput doesn't have files
         if (files.length === 0 && this.selectedFiles && this.selectedFiles.size > 0) {
             files = Array.from(this.selectedFiles);
+            console.log('📁 [UPLOAD] Using stored files:', files.length, 'files');
         }
 
         if (files.length === 0) {
+            console.error('❌ [UPLOAD] No files selected');
             this.showToast('Select files', 'error');
             return;
         }
 
         // Проверяем размер каждого файла (500MB = 500 * 1024 * 1024 bytes)
         const maxSize = 500 * 1024 * 1024; // 500MB
+        console.log('📏 [UPLOAD] Checking file sizes (max:', maxSize, 'bytes)...');
+        
         for (const file of files) {
+            console.log('📄 [UPLOAD] File:', file.name, 'Size:', file.size, 'bytes');
             if (file.size > maxSize) {
+                console.error('❌ [UPLOAD] File too large:', file.name, 'Size:', file.size);
                 this.showToast(`File "${file.name}" too large. Maximum size: 500MB`, 'error');
                 return;
             }
         }
+
+        console.log('✅ [UPLOAD] All files passed size validation');
+        console.log('📂 [UPLOAD] Current folder:', this.currentFolder || 'root');
+        console.log('🔑 [UPLOAD] API Key present:', !!this.apiKey);
 
         this.showUploadProgress(true);
 
@@ -1355,30 +1412,90 @@ class xCloudStorage {
             const results = [];
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
+                console.log(`📤 [UPLOAD] Uploading file ${i + 1}/${files.length}:`, file.name);
+                
                 const formData = new FormData();
                 formData.append('file', file);
                 if (this.currentFolder) {
                     formData.append('folder', this.currentFolder);
+                    console.log('📂 [UPLOAD] Adding folder to formData:', this.currentFolder);
                 }
 
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    headers: {
-                        'X-API-Key': this.apiKey
-                    },
-                    body: formData
+                console.log('🌐 [UPLOAD] Sending request to /api/upload...');
+                
+                // Create XMLHttpRequest for progress tracking
+                const xhr = new XMLHttpRequest();
+                
+                // Set up progress tracking
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        const fileProgress = (event.loaded / event.total) * 100;
+                        const overallProgress = ((i + (fileProgress / 100)) / files.length) * 100;
+                        
+                        console.log(`📊 [UPLOAD] File progress: ${fileProgress.toFixed(1)}%, Overall: ${overallProgress.toFixed(1)}%`);
+                        
+                        // Update progress bar
+                        document.getElementById('progressFill').style.width = overallProgress + '%';
+                        document.getElementById('progressText').textContent = Math.round(overallProgress) + '%';
+                    }
+                });
+                
+                // Create promise for XMLHttpRequest
+                const uploadPromise = new Promise((resolve, reject) => {
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const result = JSON.parse(xhr.responseText);
+                                resolve({ ok: true, result });
+                            } catch (e) {
+                                reject(new Error('Invalid JSON response'));
+                            }
+                        } else {
+                            reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+                        }
+                    };
+                    
+                    xhr.onerror = () => {
+                        reject(new Error('Network error'));
+                    };
+                    
+                    xhr.ontimeout = () => {
+                        reject(new Error('Request timeout'));
+                    };
+                });
+                
+                // Send request
+                xhr.open('POST', '/api/upload');
+                xhr.setRequestHeader('X-API-Key', this.apiKey);
+                xhr.send(formData);
+                
+                const response = await uploadPromise;
+
+                console.log('📡 [UPLOAD] Response received:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    ok: response.ok
                 });
 
                 if (response.ok) {
-                    const result = await response.json();
+                    const result = response.result;
+                    console.log('✅ [UPLOAD] File uploaded successfully:', result);
                     results.push(result);
-                } else if (response.status === 413) {
+                } else if (xhr.status === 413) {
+                    console.error('❌ [UPLOAD] File too large (413):', file.name);
                     throw new Error(`File "${file.name}" too large. Maximum size: 500MB`);
                 } else {
-                    throw new Error(`Upload failed for "${file.name}"`);
+                    console.error('❌ [UPLOAD] Upload failed:', {
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        fileName: file.name
+                    });
+                    throw new Error(`Upload failed for "${file.name}" (${xhr.status}: ${xhr.statusText})`);
                 }
             }
 
+            console.log('🎉 [UPLOAD] All files uploaded successfully:', results.length, 'files');
+            
             if (results.length === 1) {
                 this.showToast(`File "${results[0].originalName}" uploaded successfully`, 'success');
             } else {
@@ -1388,8 +1505,15 @@ class xCloudStorage {
             this.closeUploadModal();
             this.loadFiles(true); // Принудительное обновление после загрузки
         } catch (error) {
+            console.error('💥 [UPLOAD] Upload error:', error);
+            console.error('💥 [UPLOAD] Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
             this.showToast('Upload error: ' + error.message, 'error');
         } finally {
+            console.log('🏁 [UPLOAD] Upload process finished');
             this.showUploadProgress(false);
         }
     }
@@ -1399,19 +1523,9 @@ class xCloudStorage {
         progress.style.display = show ? 'block' : 'none';
         
         if (show) {
-            // Simulate progress
-            let progressValue = 0;
-            const interval = setInterval(() => {
-                progressValue += Math.random() * 30;
-                if (progressValue > 90) progressValue = 90;
-                
-                document.getElementById('progressFill').style.width = progressValue + '%';
-                document.getElementById('progressText').textContent = Math.round(progressValue) + '%';
-                
-                if (progressValue >= 90) {
-                    clearInterval(interval);
-                }
-            }, 200);
+            // Reset progress bar to 0%
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressText').textContent = '0%';
         }
     }
 

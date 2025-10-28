@@ -167,7 +167,16 @@ app.use((req, res, next) => {
   // Check if user is authenticated
   const apiKey = req.headers['x-api-key'] || req.query.api_key;
   
+  console.log('🔐 [AUTH] Request:', {
+    path: req.path,
+    method: req.method,
+    hasApiKey: !!apiKey,
+    apiKeyLength: apiKey ? apiKey.length : 0,
+    userAgent: req.headers['user-agent']
+  });
+  
   if (!apiKey) {
+    console.log('❌ [AUTH] No API key provided for:', req.path);
     if (req.path.startsWith('/api/')) {
       return res.status(401).json({ error: 'API key required' });
     }
@@ -176,15 +185,18 @@ app.use((req, res, next) => {
   }
   
   if (apiKey === config.MAIN_API_KEY) {
+    console.log('✅ [AUTH] Main API key authenticated for:', req.path);
     req.userRole = 'main';
     return next();
   }
   
   if (apiKey === config.UPLOAD_API_KEY) {
+    console.log('✅ [AUTH] Upload API key authenticated for:', req.path);
     req.userRole = 'upload';
     return next();
   }
   
+  console.log('❌ [AUTH] Invalid API key for:', req.path);
   if (req.path.startsWith('/api/')) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
@@ -434,40 +446,87 @@ app.post('/api/folders', checkPermission('main'), async (req, res) => {
 
 // Upload file with folder support
 app.post('/api/upload', upload.single('file'), (req, res) => {
+  console.log('📤 [SERVER] Upload request received');
+  console.log('📤 [SERVER] Request headers:', {
+    'content-type': req.headers['content-type'],
+    'content-length': req.headers['content-length'],
+    'x-api-key': req.headers['x-api-key'] ? '***present***' : 'missing',
+    'user-agent': req.headers['user-agent']
+  });
+  
   if (!req.file) {
+    console.error('❌ [SERVER] No file uploaded');
     return res.status(400).json({ error: 'No file uploaded' });
   }
   
+  console.log('📁 [SERVER] File details:', {
+    originalname: req.file.originalname,
+    filename: req.file.filename,
+    size: req.file.size,
+    mimetype: req.file.mimetype,
+    path: req.file.path
+  });
+  
   const folder = req.body.folder || '';
+  console.log('📂 [SERVER] Target folder:', folder || 'root');
+  
   const folderPath = folder ? path.join(config.STORAGE_PATH, folder) : config.STORAGE_PATH;
+  console.log('📂 [SERVER] Full folder path:', folderPath);
   
   // Ensure folder exists
-  fs.ensureDirSync(folderPath);
+  try {
+    fs.ensureDirSync(folderPath);
+    console.log('✅ [SERVER] Folder ensured:', folderPath);
+  } catch (error) {
+    console.error('❌ [SERVER] Failed to ensure folder:', error);
+    return res.status(500).json({ error: 'Failed to create folder' });
+  }
   
   // Handle file naming and duplicates
   const originalName = req.file.originalname;
   const fileExt = path.extname(originalName);
   const baseName = path.basename(originalName, fileExt);
   
+  console.log('📝 [SERVER] File naming:', {
+    originalName,
+    fileExt,
+    baseName
+  });
+  
   // Create tmp directory if it doesn't exist
   const tmpDir = path.join(config.STORAGE_PATH, 'tmp');
-  fs.ensureDirSync(tmpDir);
+  try {
+    fs.ensureDirSync(tmpDir);
+    console.log('✅ [SERVER] Tmp directory ensured:', tmpDir);
+  } catch (error) {
+    console.error('❌ [SERVER] Failed to ensure tmp directory:', error);
+    return res.status(500).json({ error: 'Failed to create tmp directory' });
+  }
   
   // Move file to tmp directory first
   const tmpPath = path.join(tmpDir, originalName);
-  fs.moveSync(req.file.path, tmpPath);
+  try {
+    fs.moveSync(req.file.path, tmpPath);
+    console.log('✅ [SERVER] File moved to tmp:', tmpPath);
+  } catch (error) {
+    console.error('❌ [SERVER] Failed to move file to tmp:', error);
+    return res.status(500).json({ error: 'Failed to move file to temporary location' });
+  }
   
   // Now check for duplicates in target directory
   let finalName = originalName;
   let counter = 1;
   
+  console.log('🔍 [SERVER] Checking for duplicates...');
   while (true) {
     const targetPath = folder ? path.join(folderPath, finalName) : path.join(config.STORAGE_PATH, finalName);
     
     if (!fs.existsSync(targetPath)) {
+      console.log('✅ [SERVER] No duplicate found, using name:', finalName);
       break; // File doesn't exist in target folder, we can use this name
     }
     
+    console.log('⚠️ [SERVER] Duplicate found:', finalName, 'trying:', `${baseName} (${counter})${fileExt}`);
     // File exists in target folder, try with index (starting from 1, not 0)
     finalName = `${baseName} (${counter})${fileExt}`;
     counter++;
@@ -477,26 +536,57 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   const sourcePath = tmpPath;
   const destinationPath = folder ? path.join(folderPath, finalName) : path.join(config.STORAGE_PATH, finalName);
   
+  console.log('📁 [SERVER] Moving file to final location:', {
+    source: sourcePath,
+    destination: destinationPath
+  });
+  
   try {
     fs.moveSync(sourcePath, destinationPath);
+    console.log('✅ [SERVER] File saved successfully:', destinationPath);
   } catch (error) {
+    console.error('❌ [SERVER] Failed to save file:', error);
     return res.status(500).json({ error: 'Failed to save file' });
   }
   
-  res.json({
+  const result = {
     message: 'File uploaded successfully',
     filename: finalName,
     originalName: req.file.originalname,
     size: req.file.size,
     folder: folder
-  });
+  };
+  
+  console.log('🎉 [SERVER] Upload completed successfully:', result);
+  res.json(result);
 });
 
 // Error handling for file uploads
 app.use((error, req, res, next) => {
+  console.log('💥 [SERVER] Upload error handler triggered:', {
+    code: error.code,
+    message: error.message,
+    field: error.field,
+    path: req.path,
+    method: req.method
+  });
+  
   if (error.code === 'LIMIT_FILE_SIZE') {
+    console.error('❌ [SERVER] File too large:', error.message);
     return res.status(413).json({ error: 'File too large. Maximum size: 500MB' });
   }
+  
+  if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+    console.error('❌ [SERVER] Unexpected file field:', error.message);
+    return res.status(400).json({ error: 'Unexpected file field' });
+  }
+  
+  if (error.code === 'LIMIT_PART_COUNT') {
+    console.error('❌ [SERVER] Too many parts:', error.message);
+    return res.status(400).json({ error: 'Too many parts' });
+  }
+  
+  console.error('❌ [SERVER] Unknown upload error:', error);
   next(error);
 });
 
