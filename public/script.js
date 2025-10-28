@@ -817,11 +817,9 @@ class xCloudStorage {
         const breadcrumb = document.getElementById('breadcrumb');
         const folderParts = this.currentFolder ? this.currentFolder.split('/') : [];
         
-        // Check cache breadcrumb
+        // Check cache breadcrumb (only for path, not stats)
         const cacheKey = this.currentFolder;
-        if (this.breadcrumbCache && this.breadcrumbCache.key === cacheKey) {
-            return; // Breadcrumb hasn't changed
-        }
+        const pathChanged = !this.breadcrumbCache || this.breadcrumbCache.key !== cacheKey;
         
         let pathHtml = '<button class="breadcrumb-item" data-folder=""><i class="fas fa-home"></i><span>Root</span></button>';
         
@@ -860,42 +858,42 @@ class xCloudStorage {
         
         const lastUpdate = new Date().toLocaleTimeString('en-US');
         
-        const html = `
-            <div class="breadcrumb-path">
-                ${pathHtml}
-            </div>
-            <div class="breadcrumb-stats">
-                <div class="stat-item">
-                    <i class="fas fa-folder stat-icon"></i>
-                    <div class="stat-content">
-                        <span class="stat-value" id="totalFiles">${totalFiles}</span>
-                        <span class="stat-label">Files</span>
-                    </div>
-                </div>
-                <div class="stat-item">
-                    <i class="fas fa-hdd stat-icon"></i>
-                    <div class="stat-content">
-                        <span class="stat-value" id="totalSize">${storageUsage}</span>
-                        <span class="stat-label">Storage</span>
-                    </div>
-                </div>
-                <div class="stat-item">
-                    <i class="fas fa-clock stat-icon"></i>
-                    <div class="stat-content">
-                        <span class="stat-value" id="lastUpdate">${lastUpdate}</span>
-                        <span class="stat-label">Updated</span>
-                    </div>
-                </div>
-            </div>
-        `;
+        // Update breadcrumb path only if it changed
+        if (pathChanged) {
+            const breadcrumbPath = breadcrumb.querySelector('.breadcrumb-path');
+            if (breadcrumbPath) {
+                breadcrumbPath.innerHTML = pathHtml;
+            }
+            
+            // Update cache
+            this.breadcrumbCache = {
+                key: cacheKey,
+                pathHtml: pathHtml
+            };
+        }
         
-        // Update cache
-        this.breadcrumbCache = {
-            key: cacheKey,
-            html: html
-        };
+        // Update stats directly without recreating elements
+        const totalFilesElement = document.getElementById('totalFiles');
+        const totalSizeElement = document.getElementById('totalSize');
+        const lastUpdateElement = document.getElementById('lastUpdate');
         
-        breadcrumb.innerHTML = html;
+        if (totalFilesElement) {
+            totalFilesElement.textContent = totalFiles;
+        }
+        
+        if (totalSizeElement) {
+            totalSizeElement.textContent = storageUsage;
+        }
+        
+        if (lastUpdateElement) {
+            lastUpdateElement.textContent = lastUpdate;
+        }
+        
+        console.log('📊 [BREADCRUMB] Updated stats:', {
+            totalFiles,
+            storageUsage,
+            lastUpdate
+        });
     }
 
     navigateToFolder(folderName, isAbsolutePath = false) {
