@@ -46,8 +46,8 @@ class xCloudStorage {
 
             if (response.ok) {
                 this.showMainContent();
+                this.loadGlobalStats(); // Load global stats first
                 this.loadFiles();
-                this.loadGlobalStats(); // Load global stats on startup
             } else {
                 // API key doesn't work, clear localStorage
                 localStorage.removeItem('xcloud_api_key');
@@ -467,8 +467,8 @@ class xCloudStorage {
                 localStorage.setItem('xcloud_api_key', this.apiKey);
                 this.showToast('Login successful', 'success');
                 this.showMainContent();
+                this.loadGlobalStats(); // Load global stats first
                 this.loadFiles();
-                this.loadGlobalStats(); // Load global stats after login
             } else {
                 console.error('❌ [AUTH] Authentication failed:', response.status, response.statusText);
                 // Clear localStorage on invalid key
@@ -765,20 +765,51 @@ class xCloudStorage {
 
 
     async loadGlobalStats() {
+        console.log('📊 [STATS] Loading global stats...');
+        
+        if (!this.apiKey) {
+            console.log('⚠️ [STATS] No API key, skipping global stats');
+            return;
+        }
+        
         try {
+            console.log('🌐 [STATS] Sending request to /api/stats...');
             const response = await fetch('/api/stats', {
                 headers: {
                     'X-API-Key': this.apiKey
                 }
             });
             
+            console.log('📡 [STATS] Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok
+            });
+            
             if (response.ok) {
                 const data = await response.json();
+                console.log('✅ [STATS] Global stats loaded:', data);
                 this.globalStats = data;
+                this.updateBreadcrumb();
+            } else {
+                console.error('❌ [STATS] Failed to load global stats:', response.status, response.statusText);
+                // Set default stats to avoid showing 0
+                this.globalStats = {
+                    totalFiles: 0,
+                    totalSize: 0,
+                    totalFolders: 0
+                };
                 this.updateBreadcrumb();
             }
         } catch (error) {
-            console.error('Failed to load global stats:', error);
+            console.error('💥 [STATS] Error loading global stats:', error);
+            // Set default stats to avoid showing 0
+            this.globalStats = {
+                totalFiles: 0,
+                totalSize: 0,
+                totalFolders: 0
+            };
+            this.updateBreadcrumb();
         }
     }
 
@@ -809,15 +840,25 @@ class xCloudStorage {
             });
         }
         
-        // Use global stats if available, otherwise use local stats
-        const totalFiles = this.globalStats ? this.globalStats.totalFiles : this.files.length;
-        const totalSize = this.globalStats ? this.globalStats.totalSize : this.files.reduce((sum, file) => sum + file.size, 0);
-        const lastUpdate = new Date().toLocaleTimeString('en-US');
+        // Use global stats if available, otherwise show loading state
+        let totalFiles, totalSize, storageUsage;
         
-        // Calculate storage usage (assuming 300GB total)
-        const totalStorageGB = 300;
-        const usedStorageGB = totalSize / (1024 * 1024 * 1024);
-        const storageUsage = `${this.formatFileSize(totalSize)} of ${totalStorageGB} GB`;
+        if (this.globalStats) {
+            totalFiles = this.globalStats.totalFiles;
+            totalSize = this.globalStats.totalSize;
+            
+            // Calculate storage usage (assuming 300GB total)
+            const totalStorageGB = 300;
+            const usedStorageGB = totalSize / (1024 * 1024 * 1024);
+            storageUsage = `${this.formatFileSize(totalSize)} of ${totalStorageGB} GB`;
+        } else {
+            // Show loading state while stats are being fetched
+            totalFiles = '...';
+            totalSize = 0;
+            storageUsage = 'Loading...';
+        }
+        
+        const lastUpdate = new Date().toLocaleTimeString('en-US');
         
         const html = `
             <div class="breadcrumb-path">
